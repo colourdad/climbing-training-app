@@ -1,7 +1,7 @@
 /* ===========================================================================
    SEND · Climbing Training
-   Dark, Strava-inspired structure. Slate / Warm sand / Moss green on near-black.
-   Optimised for iPhone (375px). Tab bar at bottom, content scrolls above it.
+   Dark, Strava-inspired. Slate / Warm sand / Moss green on near-black.
+   Optimised for iPhone (375px). Bottom tab bar, content scrolls above.
    =========================================================================== */
 
 :root {
@@ -62,6 +62,21 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
+input, textarea {
+  font: inherit;
+  color: inherit;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  width: 100%;
+  outline: none;
+}
+textarea { resize: vertical; }
+input:focus, textarea:focus {
+  border-color: var(--border-2);
+}
+
 a { color: inherit; }
 
 /* ----- App shell ---------------------------------------------------------- */
@@ -118,6 +133,7 @@ a { color: inherit; }
   border-radius: 50%;
   color: var(--text-2);
   transition: background 150ms ease;
+  flex: 0 0 38px;
 }
 .cog:active { background: var(--card-2); }
 
@@ -271,6 +287,7 @@ a { color: inherit; }
   align-items: baseline;
   justify-content: space-between;
   margin: 26px 0 12px;
+  gap: 10px;
 }
 .section-head h3 {
   font-size: 18px;
@@ -281,9 +298,10 @@ a { color: inherit; }
 .section-head .section-sub {
   font-size: 12px;
   color: var(--text-2);
+  text-align: right;
 }
 
-/* ----- Phase card -------------------------------------------------------- */
+/* ----- Phase pill -------------------------------------------------------- */
 
 .phase-pill {
   display: inline-flex;
@@ -380,6 +398,7 @@ a { color: inherit; }
 .week-chip.deload, .week-chip.taper {
   border-color: color-mix(in srgb, var(--sand) 60%, var(--border));
 }
+.week-chip.custom { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rust) 50%, transparent); }
 
 /* ----- Day list ---------------------------------------------------------- */
 
@@ -393,20 +412,31 @@ a { color: inherit; }
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px;
   display: flex;
-  align-items: center;
-  gap: 14px;
+  align-items: stretch;
   text-align: left;
-  transition: background 150ms ease, transform 100ms ease;
   width: 100%;
+  overflow: hidden;
+  transition: background 150ms ease, transform 100ms ease;
 }
-.day-row:active { background: var(--card-2); transform: scale(0.99); }
-
 .day-row.is-today {
   border-color: color-mix(in srgb, var(--accent) 80%, var(--border));
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent) inset;
 }
+
+.day-row-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  flex: 1;
+  text-align: left;
+  min-width: 0;
+}
+.day-row-main:active { background: var(--card-2); }
+
+.day-row.rest .day-name { color: var(--text-3); }
+.day-row.complete .day-name { color: var(--text-2); }
 
 .day-dow {
   font-size: 11px;
@@ -418,8 +448,12 @@ a { color: inherit; }
   flex: 0 0 38px;
 }
 
-.day-row.rest .day-name { color: var(--text-3); }
-.day-row.complete .day-name { text-decoration: line-through; color: var(--text-2); }
+.day-bar {
+  width: 4px;
+  align-self: stretch;
+  border-radius: 4px;
+  background: var(--border);
+}
 
 .day-body { flex: 1; min-width: 0; }
 .day-name {
@@ -434,13 +468,6 @@ a { color: inherit; }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.day-bar {
-  width: 4px;
-  align-self: stretch;
-  border-radius: 4px;
-  background: var(--border);
 }
 
 .day-check {
@@ -458,8 +485,33 @@ a { color: inherit; }
   border-color: var(--moss);
   color: #0a0a0b;
 }
+.day-check.partial {
+  border-color: var(--sand);
+  background: color-mix(in srgb, var(--sand) 15%, transparent);
+}
+.day-check.rest-dot {
+  border-color: transparent;
+}
 
-/* ----- Skill pills ------------------------------------------------------- */
+.day-reorder {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+}
+.reorder-btn {
+  width: 44px;
+  flex: 1;
+  display: grid;
+  place-items: center;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border);
+  transition: background 150ms ease;
+}
+.reorder-btn:last-child { border-bottom: none; }
+.reorder-btn:active { background: var(--card-2); }
+.reorder-btn:disabled { opacity: 0.3; }
+
+/* ----- Skill / muscle pills --------------------------------------------- */
 
 .pill {
   display: inline-flex;
@@ -482,7 +534,39 @@ a { color: inherit; }
   border-radius: 50%;
 }
 
-/* ----- Session detail ---------------------------------------------------- */
+.muscle-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--bg-2);
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  text-transform: lowercase;
+}
+.muscle-chip.selectable {
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+.muscle-chip.selectable:active { transform: scale(0.96); }
+.muscle-chip.on {
+  background: color-mix(in srgb, var(--moss) 20%, transparent);
+  border-color: var(--moss);
+  color: var(--moss);
+}
+
+.muscle-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+/* ----- Session detail --------------------------------------------------- */
 
 .back {
   display: inline-flex;
@@ -515,6 +599,18 @@ a { color: inherit; }
   color: var(--text-2);
 }
 
+.ended-banner {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-2);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  background: var(--card-2);
+  display: inline-block;
+}
+
 .exercise-list {
   display: flex;
   flex-direction: column;
@@ -526,19 +622,23 @@ a { color: inherit; }
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px 14px 14px 14px;
   text-align: left;
   width: 100%;
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
   transition: background 150ms ease;
+  overflow: hidden;
 }
 .exercise.done {
-  opacity: 0.55;
+  opacity: 0.6;
 }
 .exercise.done .exercise-name {
   text-decoration: line-through;
+}
+
+.exercise-row-top {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 12px 12px 14px;
 }
 
 .exercise-tick {
@@ -547,19 +647,24 @@ a { color: inherit; }
   border-radius: 50%;
   border: 2px solid var(--border-2);
   flex: 0 0 26px;
-  margin-top: 1px;
   display: grid;
   place-items: center;
   color: var(--moss);
   transition: background 150ms ease, border-color 150ms ease;
+  margin-top: 1px;
 }
 .exercise-tick.done {
   background: var(--moss);
   border-color: var(--moss);
   color: #0a0a0b;
 }
+.exercise-tick:active { transform: scale(0.92); }
 
-.exercise-body { flex: 1; min-width: 0; }
+.exercise-meta-area {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
 
 .exercise-row {
   display: flex;
@@ -578,19 +683,146 @@ a { color: inherit; }
   font-size: 12px;
   color: var(--text-2);
 }
+.exercise-tags {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
 .exercise-notes {
   font-size: 13px;
   color: var(--text-2);
   margin-top: 6px;
 }
-.exercise-prog {
-  font-size: 12px;
+
+.exercise-expand {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
   color: var(--text-3);
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px dashed var(--border);
+  transition: background 150ms ease, transform 200ms ease;
+  margin-top: -2px;
 }
-.exercise-prog strong { color: var(--text-2); font-weight: 600; }
+.exercise-expand.open {
+  color: var(--accent);
+  transform: rotate(180deg);
+}
+.exercise-expand:active { background: var(--card-2); }
+
+.exercise-expanded {
+  border-top: 1px solid var(--border);
+  padding: 12px 14px 16px;
+  background: var(--bg-2);
+  animation: expandIn 220ms ease-out;
+}
+@keyframes expandIn {
+  from { opacity: 0; max-height: 0; }
+  to   { opacity: 1; max-height: 1000px; }
+}
+
+.exercise-section { margin-bottom: 12px; }
+.exercise-section:last-child { margin-bottom: 0; }
+.exercise-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+.exercise-section-body {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* ----- Timer ------------------------------------------------------------ */
+
+.timer {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--border-2);
+}
+.timer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+.timer-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  color: var(--accent);
+}
+.timer-default {
+  font-variant-numeric: tabular-nums;
+}
+.timer-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.timer-time {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  flex: 1;
+  text-align: center;
+}
+.timer-time.zero {
+  color: var(--moss);
+}
+.timer-adj {
+  width: 48px;
+  padding: 8px 10px;
+  background: var(--bg-2);
+  border-radius: 8px;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+.timer-adj:active { background: var(--card-2); }
+.timer-ctrls {
+  display: flex;
+  gap: 8px;
+}
+.timer-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 10px;
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+.timer-btn:active { transform: scale(0.97); }
+.timer-play  { background: var(--moss); color: #0a0a0b; }
+.timer-pause { background: var(--sand); color: #0a0a0b; }
+.timer-reset {
+  background: var(--bg-2);
+  color: var(--text-2);
+  flex: 0 0 48px;
+  border: 1px solid var(--border);
+}
+
+/* ----- End session / ratings ------------------------------------------- */
 
 .complete-btn {
   background: var(--moss);
@@ -609,8 +841,94 @@ a { color: inherit; }
   color: var(--moss);
   border: 1px solid var(--moss);
 }
+.complete-btn.partial {
+  background: var(--card-2);
+  color: var(--sand);
+  border: 1px solid var(--sand);
+}
 
-/* ----- Progress page ----------------------------------------------------- */
+.complete-row {
+  display: flex;
+  gap: 8px;
+}
+.complete-row .complete-btn { flex: 1; }
+.complete-undo {
+  background: var(--card);
+  color: var(--text-2);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.notes-input {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.end-row { margin: 14px 0; }
+
+.rating-row {
+  margin: 14px 0 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+.rating-row:first-of-type { border-top: none; padding-top: 0; }
+.rating-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.rating-dots {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+.rating-dot {
+  height: 40px;
+  border-radius: 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-2);
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+.rating-dot.on {
+  background: var(--accent);
+  color: #0a0a0b;
+  border-color: var(--accent);
+}
+.rating-dot:active { transform: scale(0.94); }
+
+.duration-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.dur-input {
+  flex: 1;
+  font-size: 22px;
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.dur-step {
+  width: 56px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.dur-step:active { background: var(--card-2); }
+
+/* ----- Progress ---------------------------------------------------------- */
 
 .heatmap {
   display: grid;
@@ -638,11 +956,39 @@ a { color: inherit; }
   background: var(--moss);
   border-color: var(--moss);
 }
+.heatmap .hm-cell.partial {
+  background: color-mix(in srgb, var(--moss) 40%, transparent);
+  border-color: var(--sand);
+}
 .heatmap .hm-cell.deload { border-color: color-mix(in srgb, var(--sand) 65%, var(--border)); }
 .heatmap .hm-cell.today { box-shadow: 0 0 0 2px var(--accent); }
 
+.hm-legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  font-size: 11px;
+  color: var(--text-2);
+}
+.hm-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hm-legend .sw {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.hm-legend .sw.partial-sw {
+  background: color-mix(in srgb, var(--moss) 40%, transparent);
+  border: 1px solid var(--sand);
+}
+
 .phase-bars { display: flex; flex-direction: column; gap: 14px; margin-top: 12px; }
-.phase-bar-row { }
+.phase-bar-row {}
 .phase-bar-label {
   display: flex;
   justify-content: space-between;
@@ -661,12 +1007,6 @@ a { color: inherit; }
   height: 100%;
   border-radius: 999px;
   transition: width 500ms ease;
-}
-
-.radar-wrap {
-  display: flex;
-  justify-content: center;
-  margin-top: 8px;
 }
 
 /* ----- Tab bar ----------------------------------------------------------- */
@@ -703,7 +1043,7 @@ a { color: inherit; }
 .tab.active .tab-icon { color: var(--accent); }
 .tab-icon { width: 22px; height: 22px; }
 
-/* ----- Settings modal ---------------------------------------------------- */
+/* ----- Modals ----------------------------------------------------------- */
 
 .modal-bg {
   position: fixed;
@@ -727,7 +1067,10 @@ a { color: inherit; }
   padding: 24px 20px calc(24px + var(--safe-bottom));
   border-top: 1px solid var(--border-2);
   animation: slideUp 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: 90vh;
+  overflow-y: auto;
 }
+.modal-tall { max-height: 92vh; }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
 .modal h3 { margin: 0 0 4px; font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
@@ -739,8 +1082,17 @@ a { color: inherit; }
   justify-content: space-between;
   padding: 14px 0;
   border-bottom: 1px solid var(--border);
+  gap: 12px;
 }
 .modal-row:last-child { border-bottom: none; }
+
+.modal-hint {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
 
 .segmented {
   display: inline-flex;
@@ -754,6 +1106,7 @@ a { color: inherit; }
   font-weight: 700;
   color: var(--text-2);
   border-radius: 7px;
+  transition: background 150ms ease, color 150ms ease;
 }
 .segmented button.on {
   background: var(--card-2);
@@ -773,8 +1126,19 @@ a { color: inherit; }
   font-size: 13px;
 }
 
-.modal-close {
+.modal-primary {
   margin-top: 14px;
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--moss);
+  color: #0a0a0b;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.modal-close {
+  margin-top: 8px;
   width: 100%;
   padding: 14px;
   border-radius: 10px;
@@ -785,7 +1149,7 @@ a { color: inherit; }
   border: 1px solid var(--border);
 }
 
-/* ----- Notes ------------------------------------------------------------- */
+/* ----- Notes / search --------------------------------------------------- */
 
 .note-group { margin-bottom: 18px; }
 .note-group h4 {
@@ -810,6 +1174,29 @@ a { color: inherit; }
   margin-bottom: 4px;
 }
 .note-item p { margin: 0; color: var(--text-2); font-size: 13px; }
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+.search-bar input {
+  border: none;
+  background: transparent;
+  padding: 0;
+  flex: 1;
+  font-size: 14px;
+}
+.search-bar input:focus { border: none; }
+.search-clear {
+  font-size: 18px;
+  color: var(--text-2);
+  padding: 0 6px;
+}
 
 /* ----- Misc ------------------------------------------------------------- */
 

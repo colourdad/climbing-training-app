@@ -4,6 +4,8 @@ A mobile-first React app for a 16-week V6→V7+ climbing training plan. Week 1 s
 
 Built with Vite + React. All training data is hardcoded. Progress saves to your phone's local storage. No accounts, no server, no tracking.
 
+**Features:** today's session as hero · 16-week scrollable schedule with per-week edit (reorder days, switch 2/3 climbing-day weeks individually) · expandable exercises with how-to descriptions, target muscles, and per-exercise countdown timers · end-session flow that records actual minutes, difficulty 1–5, effort 1–5, and free-form notes · partial-completion indicator if you skip exercises · progress dashboard with stacked bar chart (auto-scaling), 16-week heatmap, per-phase bars · muscle-group exercise search · skill-coded pills for 8 categories.
+
 ---
 
 ## Deploy to Vercel — step by step

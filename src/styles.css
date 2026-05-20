@@ -987,6 +987,33 @@ a { color: inherit; }
   border: 1px solid var(--sand);
 }
 
+/* Stacked-bar legend (HTML, below the SVG, wraps on narrow screens) */
+.bar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.bar-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--text-2);
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+.bar-legend-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
 .phase-bars { display: flex; flex-direction: column; gap: 14px; margin-top: 12px; }
 .phase-bar-row {}
 .phase-bar-label {

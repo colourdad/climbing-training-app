@@ -951,113 +951,136 @@ function ScheduleView({ store, openSession, openSettings }) {
 }
 
 // ============================================================================
-// Stacked bar chart (replaces radar)
+// Stacked bar chart — one bar per week, stacked by skill category.
+// Y-axis auto-scales to the tallest bar. Legend below in HTML so it wraps.
 // ============================================================================
-function StackedBarChart({ countsByCategoryByPhase }) {
-  // countsByCategoryByPhase: { [skillId]: [p1count, p2count, p3count] }
+function StackedBarChart({ countsByWeek, currentWeek }) {
+  // countsByWeek: array of 16, each = { [skillId]: count }
   const cats = SKILL_ORDER;
   const width = 340;
-  const height = 240;
-  const padding = { top: 18, right: 8, bottom: 56, left: 28 };
+  const height = 220;
+  const padding = { top: 10, right: 6, bottom: 28, left: 24 };
   const chartW = width - padding.left - padding.right;
   const chartH = height - padding.top - padding.bottom;
-  const barCount = cats.length;
-  const barGap = 8;
-  const barW = (chartW - barGap * (barCount - 1)) / barCount;
+  const numBars = 16;
+  const barGap = 2;
+  const barW = (chartW - barGap * (numBars - 1)) / numBars;
 
-  const totals = cats.map(c => (countsByCategoryByPhase[c] || [0, 0, 0]).reduce((a, b) => a + b, 0));
+  // Per-week totals (used for y-scale + above-bar labels)
+  const totals = countsByWeek.map(w => cats.reduce((s, c) => s + (w[c] || 0), 0));
   const rawMax = Math.max(1, ...totals);
-  // Round y-max up to a nice number based on magnitude
+
+  // Pick a "nice" y-axis max that grows with progress.
   const niceMax = (() => {
+    if (rawMax <= 2) return 2;
     if (rawMax <= 5) return 5;
     if (rawMax <= 10) return 10;
     if (rawMax <= 20) return 20;
-    if (rawMax <= 50) return Math.ceil(rawMax / 10) * 10;
-    return Math.ceil(rawMax / 25) * 25;
+    if (rawMax <= 30) return 30;
+    if (rawMax <= 50) return Math.ceil(rawMax / 5) * 5;
+    return Math.ceil(rawMax / 10) * 10;
   })();
 
-  const ticks = (() => {
-    const stepCount = 4;
-    const step = niceMax / stepCount;
-    return Array.from({ length: stepCount + 1 }, (_, i) => Math.round(step * i));
-  })();
+  const tickCount = niceMax <= 5 ? niceMax : 4;
+  const ticks = Array.from({ length: tickCount + 1 }, (_, i) => {
+    const v = (niceMax / tickCount) * i;
+    return Math.round(v * 10) / 10;
+  });
 
   const yFor = (v) => padding.top + chartH - (v / niceMax) * chartH;
 
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: 'auto' }}>
-      {/* y-axis ticks */}
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+      {/* gridlines + y-axis labels */}
       {ticks.map(t => (
         <g key={t}>
           <line x1={padding.left} x2={width - padding.right} y1={yFor(t)} y2={yFor(t)} stroke="#25252b" strokeDasharray={t === 0 ? '' : '2,3'} />
-          <text x={padding.left - 6} y={yFor(t) + 3} fill="#6b675f" fontSize="9" textAnchor="end">{t}</text>
+          <text x={padding.left - 4} y={yFor(t) + 3} fill="#6b675f" fontSize="9" textAnchor="end">
+            {Number.isInteger(t) ? t : t.toFixed(1)}
+          </text>
         </g>
       ))}
 
-      {/* bars */}
-      {cats.map((c, i) => {
-        const segs = countsByCategoryByPhase[c] || [0, 0, 0];
-        const x = padding.left + i * (barW + barGap);
+      {/* bars (one per week) */}
+      {countsByWeek.map((counts, w) => {
+        const x = padding.left + w * (barW + barGap);
         let yCursor = yFor(0);
-        const phaseColors = PHASES.map(p => p.accent);
+        const isCurrent = (w + 1) === currentWeek;
         return (
-          <g key={c}>
-            {segs.map((v, p) => {
+          <g key={w}>
+            {/* current-week background highlight */}
+            {isCurrent && totals[w] === 0 && (
+              <rect x={x - 0.5} y={padding.top} width={barW + 1} height={chartH}
+                fill="rgba(194,168,120,0.06)" rx="2" />
+            )}
+
+            {/* stacked segments */}
+            {cats.map(cat => {
+              const v = counts[cat] || 0;
               if (v === 0) return null;
               const h = (v / niceMax) * chartH;
               const y = yCursor - h;
               yCursor = y;
               return (
                 <rect
-                  key={p}
+                  key={cat}
                   x={x}
                   y={y}
                   width={barW}
                   height={h}
-                  fill={phaseColors[p]}
-                  rx="2"
+                  fill={SKILL_CATEGORIES[cat].color}
                 />
               );
             })}
-            {/* category label */}
-            <text
-              x={x + barW / 2}
-              y={height - padding.bottom + 14}
-              fill="#a8a39a"
-              fontSize="9"
-              fontWeight="700"
-              textAnchor="middle"
-              style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}
-            >
-              {SKILL_CATEGORIES[c].short.length > 7 ? SKILL_CATEGORIES[c].short.slice(0, 7) : SKILL_CATEGORIES[c].short}
-            </text>
-            {/* total value above bar */}
-            {totals[i] > 0 && (
+
+            {/* current-week indicator dot above bar */}
+            {isCurrent && (
+              <circle cx={x + barW / 2} cy={padding.top + 4} r="2" fill="#c2a878" />
+            )}
+
+            {/* x-axis label — show every other week to avoid spillover */}
+            {((w + 1) % 2 === 1) && (
               <text
                 x={x + barW / 2}
-                y={yFor(totals[i]) - 4}
-                fill="#f5f4f1"
-                fontSize="10"
-                fontWeight="700"
+                y={height - padding.bottom + 12}
+                fill={isCurrent ? '#c2a878' : '#6b675f'}
+                fontSize="9"
+                fontWeight={isCurrent ? '700' : '500'}
                 textAnchor="middle"
               >
-                {totals[i]}
+                {w + 1}
               </text>
             )}
           </g>
         );
       })}
 
-      {/* legend */}
-      <g transform={`translate(${padding.left}, ${height - 26})`}>
-        {PHASES.map((p, idx) => (
-          <g key={p.id} transform={`translate(${idx * 90}, 0)`}>
-            <rect width="10" height="10" rx="2" fill={p.accent} />
-            <text x="14" y="9" fill="#a8a39a" fontSize="9.5">P{p.id} · {p.name}</text>
-          </g>
-        ))}
-      </g>
+      {/* x-axis sub-label */}
+      <text
+        x={(padding.left + (width - padding.right)) / 2}
+        y={height - 4}
+        fill="#6b675f"
+        fontSize="8.5"
+        fontWeight="700"
+        textAnchor="middle"
+        style={{ textTransform: 'uppercase', letterSpacing: '0.1em' }}
+      >
+        Week · 1 – 16
+      </text>
     </svg>
+  );
+}
+
+function StackedBarLegend() {
+  return (
+    <div className="bar-legend">
+      {SKILL_ORDER.map(c => (
+        <span key={c} className="bar-legend-item">
+          <span className="bar-legend-swatch" style={{ background: SKILL_CATEGORIES[c].color }} />
+          {SKILL_CATEGORIES[c].short}
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -1081,30 +1104,30 @@ function ProgressView({ store, openSettings }) {
     return { ...phase, done, total: phaseSessions.length, pct: phaseSessions.length ? (done / phaseSessions.length) * 100 : 0 };
   });
 
-  // Stacked bar chart counts: exercises completed per skill, broken down by phase.
-  // Uses proportional weighting if a session was ended early (actualMinutes / plannedMinutes scales the credit).
-  const countsByCategoryByPhase = useMemo(() => {
-    const counts = {};
-    SKILL_ORDER.forEach(s => { counts[s] = [0, 0, 0]; });
+  // Stacked bar chart counts: one entry per week (1–16), each is {skillId: count}.
+  // Each ticked exercise contributes 1, scaled by actualMinutes/plannedMinutes if the session was logged.
+  const countsByWeek = useMemo(() => {
+    const weeks = Array.from({ length: 16 }, () => {
+      const obj = {};
+      SKILL_ORDER.forEach(s => { obj[s] = 0; });
+      return obj;
+    });
     allSessions.forEach(s => {
       if (s.sessionType === 'rest') return;
-      const phase = getPhase(s.weekNumber);
       const log = store.sessionLogFor(s.weekNumber, s.dayIndex);
-      // Each ticked exercise counts as 1, weighted by actual/planned if logged
-      const ratio = log && log.plannedMinutes > 0
-        ? Math.max(0.1, Math.min(2, log.actualMinutes / log.plannedMinutes))
+      const ratio = log && log.endedAt && log.plannedMinutes > 0
+        ? Math.max(0.1, Math.min(2, (log.actualMinutes || 0) / log.plannedMinutes))
         : 1;
       s.session.exercises.forEach(ex => {
         if (store.isExerciseDone(s.weekNumber, s.dayIndex, ex.id)) {
-          counts[ex.category][phase.id - 1] += ratio;
+          weeks[s.weekNumber - 1][ex.category] += ratio;
         }
       });
     });
-    // Round nicely
-    SKILL_ORDER.forEach(s => {
-      counts[s] = counts[s].map(v => Math.round(v * 10) / 10);
+    weeks.forEach(w => {
+      SKILL_ORDER.forEach(s => { w[s] = Math.round(w[s] * 10) / 10; });
     });
-    return counts;
+    return weeks;
   }, [store.state]);
 
   // Heatmap
@@ -1157,11 +1180,12 @@ function ProgressView({ store, openSettings }) {
       </div>
 
       <div className="section-head">
-        <h3>Training balance</h3>
-        <span className="section-sub">exercises by skill · scale grows with progress</span>
+        <h3>Weekly load</h3>
+        <span className="section-sub">stacked by skill · scale grows</span>
       </div>
       <div className="card">
-        <StackedBarChart countsByCategoryByPhase={countsByCategoryByPhase} />
+        <StackedBarChart countsByWeek={countsByWeek} currentWeek={pos.weekNumber} />
+        <StackedBarLegend />
       </div>
 
       <div className="section-head">

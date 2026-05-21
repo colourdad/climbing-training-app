@@ -1,25 +1,27 @@
 /* ===========================================================================
    SEND · Climbing Training
-   Dark, Strava-inspired. Slate / Warm sand / Moss green on near-black.
+   Bright, iOS-native palette. Warm paper / pure-white cards / coral accent.
    Optimised for iPhone (375px). Bottom tab bar, content scrolls above.
    =========================================================================== */
 
 :root {
-  --bg:         #0a0a0b;
-  --bg-2:       #121215;
-  --card:       #16161a;
-  --card-2:     #1c1c21;
-  --border:     #25252b;
-  --border-2:   #34343c;
-  --text:       #f5f4f1;
-  --text-2:     #a8a39a;
-  --text-3:     #6b675f;
+  --bg:         #F5F2EC;
+  --bg-2:       #EFEBE3;
+  --card:       #FFFFFF;
+  --card-2:     #FAF7F1;
+  --border:     rgba(28, 26, 23, 0.07);
+  --border-2:   rgba(28, 26, 23, 0.14);
+  --text:       #1C1A17;
+  --text-2:     #6B6660;
+  --text-3:     #B8B2A8;
 
-  --slate:      #94a3b8;
-  --sand:       #c2a878;
-  --moss:       #7a9e5f;
-  --rust:       #d97757;
-  --accent:     var(--sand);
+  --slate:      #4A6FA8;
+  --sand:       #C2A878;
+  --moss:       #2E7D55;
+  --rust:       #E94B2C;   /* climbing-rope coral — the primary accent */
+  --accent:     var(--rust);
+
+  --on-accent:  #FFFFFF;   /* contrast text/icon colour on accent-coloured fills */
 
   --safe-top:    env(safe-area-inset-top);
   --safe-bottom: env(safe-area-inset-bottom);
@@ -29,6 +31,9 @@
   --radius-lg: 20px;
 
   --tab-h: 64px;
+
+  --shadow-card: 0 1px 2px rgba(28, 26, 23, 0.04);
+  --shadow-hero: 0 1px 3px rgba(28, 26, 23, 0.05), 0 8px 24px -8px rgba(28, 26, 23, 0.08);
 
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
     'Inter', 'Helvetica Neue', system-ui, sans-serif;
@@ -65,7 +70,7 @@ button {
 input, textarea {
   font: inherit;
   color: inherit;
-  background: var(--bg-2);
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px 12px;
@@ -144,6 +149,7 @@ a { color: inherit; }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 16px;
+  box-shadow: var(--shadow-card);
 }
 
 .card-row {
@@ -158,8 +164,9 @@ a { color: inherit; }
   padding: 22px 20px 24px;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(140deg, var(--card) 0%, var(--card-2) 100%);
-  border: 1px solid var(--border-2);
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-hero);
 }
 
 .hero::before {
@@ -168,7 +175,7 @@ a { color: inherit; }
   inset: 0;
   background: radial-gradient(
     circle at top right,
-    color-mix(in srgb, var(--accent) 28%, transparent),
+    color-mix(in srgb, var(--accent) 14%, transparent),
     transparent 60%
   );
   pointer-events: none;
@@ -214,7 +221,7 @@ a { color: inherit; }
 
 .hero-cta {
   background: var(--accent);
-  color: #0a0a0b;
+  color: var(--on-accent);
   padding: 12px 18px;
   border-radius: 999px;
   font-weight: 700;
@@ -247,6 +254,7 @@ a { color: inherit; }
   border-radius: var(--radius);
   padding: 14px 12px;
   text-align: left;
+  box-shadow: var(--shadow-card);
 }
 .stat-label {
   font-size: 10px;
@@ -300,7 +308,7 @@ a { color: inherit; }
   letter-spacing: 0.1em;
   padding: 4px 10px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
   color: var(--accent);
 }
 
@@ -343,6 +351,7 @@ a { color: inherit; }
   text-align: center;
   overflow: hidden;
   transition: background 150ms ease, transform 150ms ease, border-color 150ms ease;
+  box-shadow: var(--shadow-card);
 }
 .week-chip:active { transform: scale(0.96); }
 .week-chip-phase-bar {
@@ -351,7 +360,7 @@ a { color: inherit; }
   left: 0;
   right: 0;
   height: 3px;
-  background: var(--phase-accent, var(--border));
+  background: var(--phase-accent, var(--border-2));
 }
 
 .week-chip-num {
@@ -375,7 +384,7 @@ a { color: inherit; }
 }
 
 .week-chip.active {
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
   border-color: var(--accent);
 }
 .week-chip.active .week-chip-num,
@@ -393,9 +402,9 @@ a { color: inherit; }
   border-radius: 50%;
 }
 .week-chip.deload, .week-chip.taper {
-  border-color: color-mix(in srgb, var(--sand) 60%, var(--border));
+  border-color: color-mix(in srgb, var(--sand) 60%, var(--border-2));
 }
-.week-chip.custom { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rust) 50%, transparent); }
+.week-chip.custom { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rust) 50%, transparent), var(--shadow-card); }
 
 /* ----- Day list ---------------------------------------------------------- */
 
@@ -415,10 +424,11 @@ a { color: inherit; }
   width: 100%;
   overflow: hidden;
   transition: background 150ms ease, transform 100ms ease;
+  box-shadow: var(--shadow-card);
 }
 .day-row.is-today {
-  border-color: color-mix(in srgb, var(--accent) 80%, var(--border));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent) inset;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent), var(--shadow-card);
 }
 
 .day-row-main {
@@ -449,7 +459,7 @@ a { color: inherit; }
   width: 4px;
   align-self: stretch;
   border-radius: 4px;
-  background: var(--border);
+  background: var(--border-2);
 }
 
 .day-body { flex: 1; min-width: 0; }
@@ -480,11 +490,11 @@ a { color: inherit; }
 .day-check.checked {
   background: var(--moss);
   border-color: var(--moss);
-  color: #0a0a0b;
+  color: var(--on-accent);
 }
 .day-check.partial {
   border-color: var(--sand);
-  background: color-mix(in srgb, var(--sand) 15%, transparent);
+  background: color-mix(in srgb, var(--sand) 20%, transparent);
 }
 .day-check.rest-dot {
   border-color: transparent;
@@ -508,12 +518,12 @@ a { color: inherit; }
 .reorder-btn:active { background: var(--card-2); }
 .reorder-btn:disabled { opacity: 0.3; }
 .reorder-btn.delete-btn {
-  color: #D97757;
+  color: var(--rust);
   font-size: 20px;
   font-weight: 300;
   line-height: 1;
 }
-.reorder-btn.delete-btn:active { background: rgba(217, 119, 87, 0.12); }
+.reorder-btn.delete-btn:active { background: color-mix(in srgb, var(--rust) 10%, transparent); }
 
 .add-session-btn {
   display: block;
@@ -521,7 +531,7 @@ a { color: inherit; }
   margin-top: 10px;
   padding: 10px 14px;
   background: var(--bg-2);
-  border: 1px dashed var(--border);
+  border: 1px dashed var(--border-2);
   border-radius: 10px;
   color: var(--text-2);
   font-size: 13px;
@@ -548,7 +558,7 @@ a { color: inherit; }
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  background: var(--bg);
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 13px;
@@ -610,7 +620,7 @@ a { color: inherit; }
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--text-2);
+  color: var(--accent);
   font-size: 14px;
   font-weight: 600;
   padding: 8px 0;
@@ -664,9 +674,10 @@ a { color: inherit; }
   width: 100%;
   transition: background 150ms ease;
   overflow: hidden;
+  box-shadow: var(--shadow-card);
 }
 .exercise.done {
-  opacity: 0.6;
+  opacity: 0.55;
 }
 .exercise.done .exercise-name {
   text-decoration: line-through;
@@ -694,7 +705,7 @@ a { color: inherit; }
 .exercise-tick.done {
   background: var(--moss);
   border-color: var(--moss);
-  color: #0a0a0b;
+  color: var(--on-accent);
 }
 .exercise-tick:active { transform: scale(0.92); }
 
@@ -754,7 +765,7 @@ a { color: inherit; }
 .exercise-expanded {
   border-top: 1px solid var(--border);
   padding: 12px 14px 16px;
-  background: var(--bg-2);
+  background: var(--card-2);
   animation: expandIn 220ms ease-out;
 }
 @keyframes expandIn {
@@ -851,8 +862,8 @@ a { color: inherit; }
   transition: opacity 150ms ease, transform 150ms ease;
 }
 .timer-btn:active { transform: scale(0.97); }
-.timer-play  { background: var(--moss); color: #0a0a0b; }
-.timer-pause { background: var(--sand); color: #0a0a0b; }
+.timer-play  { background: var(--moss); color: var(--on-accent); }
+.timer-pause { background: var(--sand); color: var(--text); }
 .timer-reset {
   background: var(--bg-2);
   color: var(--text-2);
@@ -864,7 +875,7 @@ a { color: inherit; }
 
 .complete-btn {
   background: var(--moss);
-  color: #0a0a0b;
+  color: var(--on-accent);
   font-weight: 800;
   font-size: 15px;
   padding: 16px;
@@ -875,12 +886,12 @@ a { color: inherit; }
 }
 .complete-btn:active { transform: scale(0.98); opacity: 0.9; }
 .complete-btn.done {
-  background: var(--card-2);
+  background: var(--card);
   color: var(--moss);
   border: 1px solid var(--moss);
 }
 .complete-btn.partial {
-  background: var(--card-2);
+  background: var(--card);
   color: var(--sand);
   border: 1px solid var(--sand);
 }
@@ -938,7 +949,7 @@ a { color: inherit; }
 }
 .rating-dot.on {
   background: var(--accent);
-  color: #0a0a0b;
+  color: var(--on-accent);
   border-color: var(--accent);
 }
 .rating-dot:active { transform: scale(0.94); }
@@ -1000,19 +1011,19 @@ a { color: inherit; }
 }
 .heatmap button.hm-cell { cursor: default; }
 .heatmap .hm-cell.clickable { cursor: pointer; }
-.heatmap .hm-cell.clickable:hover { filter: brightness(1.1); }
-.heatmap .hm-cell.rest { opacity: 0.35; }
+.heatmap .hm-cell.clickable:hover { filter: brightness(0.96); }
+.heatmap .hm-cell.rest { opacity: 0.45; }
 .heatmap .hm-cell.done {
   background: var(--moss);
   border-color: var(--moss);
-  color: #0a0a0b;
+  color: var(--on-accent);
 }
 .heatmap .hm-cell.partial {
-  background: color-mix(in srgb, var(--moss) 55%, var(--bg-2));
-  border-color: color-mix(in srgb, var(--moss) 55%, var(--bg-2));
+  background: color-mix(in srgb, var(--moss) 45%, var(--bg));
+  border-color: color-mix(in srgb, var(--moss) 45%, var(--border-2));
   color: var(--text);
 }
-.heatmap .hm-cell.deload { border-color: color-mix(in srgb, var(--sand) 65%, var(--border)); }
+.heatmap .hm-cell.deload { border-color: color-mix(in srgb, var(--sand) 65%, var(--border-2)); }
 .heatmap .hm-cell.today {
   /* inner ring of bg gives a small breathing gap, outer ring is the marker */
   box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
@@ -1114,9 +1125,9 @@ a { color: inherit; }
   max-width: 480px;
   margin: 0 auto;
   padding: 8px 16px calc(8px + var(--safe-bottom));
-  background: rgba(10, 10, 11, 0.88);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
   border-top: 1px solid var(--border);
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -1143,8 +1154,8 @@ a { color: inherit; }
 .modal-bg {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+  background: rgba(28, 26, 23, 0.35);
+  backdrop-filter: blur(6px);
   z-index: 100;
   display: flex;
   align-items: flex-end;
@@ -1160,10 +1171,11 @@ a { color: inherit; }
   width: 100%;
   max-width: 480px;
   padding: 24px 20px calc(24px + var(--safe-bottom));
-  border-top: 1px solid var(--border-2);
+  border-top: 1px solid var(--border);
   animation: slideUp 240ms cubic-bezier(0.16, 1, 0.3, 1);
   max-height: 90vh;
   overflow-y: auto;
+  box-shadow: 0 -8px 32px -8px rgba(28, 26, 23, 0.18);
 }
 .modal-tall { max-height: 92vh; }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -1204,9 +1216,9 @@ a { color: inherit; }
   transition: background 150ms ease, color 150ms ease;
 }
 .segmented button.on {
-  background: var(--card-2);
+  background: var(--card);
   color: var(--text);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  box-shadow: 0 1px 2px rgba(28, 26, 23, 0.08);
 }
 
 .modal-danger {
@@ -1215,8 +1227,8 @@ a { color: inherit; }
   padding: 14px;
   border-radius: 10px;
   background: transparent;
-  color: #d97575;
-  border: 1px solid #4a2a2a;
+  color: #B33A2A;
+  border: 1px solid color-mix(in srgb, #B33A2A 30%, var(--border-2));
   font-weight: 700;
   font-size: 13px;
 }
@@ -1227,7 +1239,7 @@ a { color: inherit; }
   padding: 14px;
   border-radius: 10px;
   background: var(--moss);
-  color: #0a0a0b;
+  color: var(--on-accent);
   font-weight: 800;
   font-size: 14px;
 }
@@ -1261,6 +1273,7 @@ a { color: inherit; }
   border-radius: var(--radius);
   padding: 14px;
   margin-bottom: 8px;
+  box-shadow: var(--shadow-card);
 }
 .note-item strong {
   display: block;
@@ -1291,6 +1304,7 @@ a { color: inherit; }
   cursor: pointer;
   font-family: inherit;
   transition: border-color 150ms ease, background 150ms ease;
+  box-shadow: var(--shadow-card);
 }
 .diary-entry:hover { border-color: var(--text-3); }
 .diary-bar {
@@ -1366,7 +1380,7 @@ a { color: inherit; }
 .assessment-input:focus {
   outline: none;
   border-color: var(--text-2);
-  background: var(--bg);
+  background: var(--card);
 }
 
 /* ----- Misc ------------------------------------------------------------- */

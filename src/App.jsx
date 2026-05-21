@@ -1189,7 +1189,20 @@ function ProgressView({ store, openSettings }) {
     return st === 'done' || st === 'partial';
   }).length;
   const totalSessions = allSessions.filter(s => s.sessionType !== 'rest').length;
-  const overallPct = totalSessions ? Math.round((completedCount / totalSessions) * 100) : 0;
+
+  // Average effort across every session that has a logged effort value (1–10).
+  // Skips unlogged sessions and any log where effort was left at 0.
+  const { avgEffort, effortSampleCount } = useMemo(() => {
+    let sum = 0;
+    let n = 0;
+    Object.values(store.state.sessionLog || {}).forEach(log => {
+      if (log && typeof log.effort === 'number' && log.effort > 0) {
+        sum += log.effort;
+        n += 1;
+      }
+    });
+    return { avgEffort: n ? sum / n : 0, effortSampleCount: n };
+  }, [store.state]);
 
   // Stacked bar chart counts: one entry per week (1–TOTAL_WEEKS), each is {skillId: count}.
   // Each ticked exercise contributes 1, scaled by actualMinutes/plannedMinutes if the session was logged.
@@ -1220,7 +1233,7 @@ function ProgressView({ store, openSettings }) {
   // Heatmap
   const heatmap = useMemo(() => {
     const rows = [];
-    for (let w = 1; w <= 16; w++) {
+    for (let w = 1; w <= TOTAL_WEEKS; w++) {
       const week = getWeekSchedule(w, store.cadenceFor(w), store.patternFor(w));
       rows.push(week.map((d, i) => {
         const status = d.sessionType !== 'rest' ? store.getSessionStatus(w, i, d.session.exercises) : 'planned';
@@ -1264,9 +1277,9 @@ function ProgressView({ store, openSettings }) {
           <div className="stat-sub">of {totalSessions}</div>
         </div>
         <div className="stat">
-          <div className="stat-label">Complete</div>
-          <div className="stat-value">{overallPct}%</div>
-          <div className="stat-sub">overall</div>
+          <div className="stat-label">Avg effort</div>
+          <div className="stat-value">{effortSampleCount ? avgEffort.toFixed(1) : '—'}</div>
+          <div className="stat-sub">{effortSampleCount ? `over ${effortSampleCount} session${effortSampleCount === 1 ? '' : 's'}` : 'no sessions logged'}</div>
         </div>
       </div>
 
@@ -1293,7 +1306,7 @@ function ProgressView({ store, openSettings }) {
             <React.Fragment key={w}>
               <div className="hm-label-side">{w + 1}</div>
               {row.map((cell, d) => {
-                const showEffort = cell.status === 'done' && cell.effort > 0;
+                const showEffort = (cell.status === 'done' || cell.status === 'partial') && cell.effort > 0;
                 const clickable = cell.sessionType !== 'rest' && !!cell.log;
                 const Tag = clickable ? 'button' : 'div';
                 return (

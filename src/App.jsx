@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  PHASES,
   SKILL_CATEGORIES,
   SKILL_ORDER,
   getPhase,
@@ -14,7 +13,6 @@ import {
   formatDateLong,
   NOTES_CONTENT,
   buildExerciseCatalog,
-  getAllMuscles,
 } from './data.js';
 
 // ============================================================================
@@ -766,10 +764,6 @@ function HomeView({ store, openSession, openSettings }) {
             : 'Active recovery: walk, mobility, gentle stretching.'}
         </div>
         <div className="hero-bottom">
-          <div className="hero-stat">
-            Phase
-            <strong>{phase.name}</strong>
-          </div>
           {todayDay && todayDay.sessionType !== 'rest' && (
             <button
               className={`hero-cta ${todayStatus === 'done' ? 'muted' : ''}`}
@@ -1097,13 +1091,6 @@ function ProgressView({ store, openSettings }) {
   const totalSessions = allSessions.filter(s => s.sessionType !== 'rest').length;
   const overallPct = totalSessions ? Math.round((completedCount / totalSessions) * 100) : 0;
 
-  // Per-phase
-  const phaseStats = PHASES.map(phase => {
-    const phaseSessions = allSessions.filter(s => phase.weeks.includes(s.weekNumber) && s.sessionType !== 'rest');
-    const done = phaseSessions.filter(s => store.getSessionStatus(s.weekNumber, s.dayIndex, s.session.exercises) === 'done').length;
-    return { ...phase, done, total: phaseSessions.length, pct: phaseSessions.length ? (done / phaseSessions.length) * 100 : 0 };
-  });
-
   // Stacked bar chart counts: one entry per week (1–16), each is {skillId: count}.
   // Each ticked exercise contributes 1, scaled by actualMinutes/plannedMinutes if the session was logged.
   const countsByWeek = useMemo(() => {
@@ -1189,26 +1176,6 @@ function ProgressView({ store, openSettings }) {
       </div>
 
       <div className="section-head">
-        <h3>Per phase</h3>
-        <span className="section-sub">3 phases, 16 weeks</span>
-      </div>
-      <div className="card">
-        <div className="phase-bars">
-          {phaseStats.map(p => (
-            <div className="phase-bar-row" key={p.id}>
-              <div className="phase-bar-label">
-                <strong>P{p.id} · {p.name}</strong>
-                <span>{p.done}/{p.total} · {Math.round(p.pct)}%</span>
-              </div>
-              <div className="phase-bar">
-                <div className="phase-bar-fill" style={{ width: `${p.pct}%`, background: p.accent }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="section-head">
         <h3>16-week heatmap</h3>
         <span className="section-sub">M · T · W · T · F · S · S</span>
       </div>
@@ -1249,23 +1216,17 @@ function ProgressView({ store, openSettings }) {
 // ============================================================================
 function NotesView({ store, openSettings }) {
   const catalog = useMemo(() => buildExerciseCatalog(), []);
-  const muscles = useMemo(() => getAllMuscles(), []);
-  const [selectedMuscle, setSelectedMuscle] = useState(null);
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
-    let list = catalog;
-    if (selectedMuscle) list = list.filter(e => e.muscles.includes(selectedMuscle));
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(e =>
-        e.name.toLowerCase().includes(q) ||
-        e.muscles.some(m => m.toLowerCase().includes(q)) ||
-        (e.description || '').toLowerCase().includes(q)
-      );
-    }
-    return list;
-  }, [catalog, selectedMuscle, search]);
+    if (!search.trim()) return catalog;
+    const q = search.toLowerCase();
+    return catalog.filter(e =>
+      e.name.toLowerCase().includes(q) ||
+      e.muscles.some(m => m.toLowerCase().includes(q)) ||
+      (e.description || '').toLowerCase().includes(q)
+    );
+  }, [catalog, search]);
 
   return (
     <div className="view">
@@ -1282,7 +1243,7 @@ function NotesView({ store, openSettings }) {
       {/* Muscle search */}
       <div className="section-head">
         <h3>Find an exercise</h3>
-        <span className="section-sub">by muscle group</span>
+        <span className="section-sub">search by name, muscle, or description</span>
       </div>
 
       <div className="search-bar">
@@ -1298,27 +1259,13 @@ function NotesView({ store, openSettings }) {
         )}
       </div>
 
-      <div className="muscle-chips">
-        {muscles.map(m => (
-          <button
-            key={m}
-            className={`muscle-chip selectable ${selectedMuscle === m ? 'on' : ''}`}
-            onClick={() => setSelectedMuscle(selectedMuscle === m ? null : m)}
-          >
-            {m}
-          </button>
-        ))}
-      </div>
-
-      {(selectedMuscle || search) && (
+      {search && (
         <div className="search-meta tiny muted" style={{ marginTop: 10 }}>
-          {filtered.length} {filtered.length === 1 ? 'exercise' : 'exercises'}
-          {selectedMuscle ? ` targeting ${selectedMuscle}` : ''}
-          {search ? ` matching "${search}"` : ''}
+          {filtered.length} {filtered.length === 1 ? 'exercise' : 'exercises'} matching "{search}"
         </div>
       )}
 
-      {(selectedMuscle || search) ? (
+      {search ? (
         <div className="exercise-list" style={{ marginTop: 12 }}>
           {filtered.map((e, i) => (
             <div key={`${e.sessionType}-${e.id}`} className="exercise" style={{ paddingTop: 12 }}>
@@ -1334,7 +1281,7 @@ function NotesView({ store, openSettings }) {
                 {e.description && <div className="exercise-notes">{e.description}</div>}
                 <div className="row-gap-6" style={{ marginTop: 6 }}>
                   {e.muscles.map(m => (
-                    <span key={m} className={`muscle-chip ${selectedMuscle === m ? 'on' : ''}`}>{m}</span>
+                    <span key={m} className="muscle-chip">{m}</span>
                   ))}
                 </div>
               </div>

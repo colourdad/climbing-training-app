@@ -80,7 +80,7 @@ const limitExercises = (phase, deload = false) => [
     progression: 'Non-negotiable with tweaky fingers — never skip or rush it.',
     description: 'Mobilise wrists in both directions, perform finger tendon glides (fist → hook → straight → claw), gently pull each finger to stretch flexors. Rotate shoulders. The goal is blood flow and gentle joint loading, not stretching cold tissue.',
     muscles: ['fingers', 'wrists', 'forearms', 'shoulders'],
-    timer: { sec: 600, mode: 'work', label: 'Warm-up' },
+    timer: { sec: 0 },
   }),
   ex({
     id: 'easy',
@@ -132,7 +132,7 @@ const limitExercises = (phase, deload = false) => [
     progression: 'Massage any tweaky spots. Contrast soak if inflamed.',
     description: 'Wrap rubber band around fingertips and extend against resistance — strengthens extensors. Slow wrist rotations. Shoulder dislocates with a band. Massage forearms and any tweaky finger pulleys with thumb pressure.',
     muscles: ['fingers', 'wrists', 'forearm extensors', 'shoulders'],
-    timer: { sec: 600, mode: 'work', label: 'Cool-down' },
+    timer: { sec: 0 },
   }),
 ];
 
@@ -147,7 +147,7 @@ const volumeExercises = (deload = false) => [
     progression: 'Open-hand only until fully warm.',
     description: 'Same as limit days. Wrist mobility, tendon glides, easy climbing on the Kilter open-hand. Volume sessions hit fingers hard — give them every chance to be ready.',
     muscles: ['fingers', 'wrists', 'forearms', 'shoulders'],
-    timer: { sec: 1500, mode: 'work', label: 'Warm-up' },
+    timer: { sec: 0 },
   }),
   ex({
     id: '4x4',
@@ -200,7 +200,7 @@ const techExercises = (deload = false) => [
     progression: 'Open-hand only until fully warm.',
     description: 'Standard warm-up — wrist mobility, tendon glides, easy climbing. Slightly shorter than limit days because the day\'s effort is lower, but still thorough.',
     muscles: ['fingers', 'wrists', 'forearms'],
-    timer: { sec: 900, mode: 'work', label: 'Warm-up' },
+    timer: { sec: 0 },
   }),
   ex({
     id: 'intentional',
@@ -236,7 +236,7 @@ const techExercises = (deload = false) => [
     progression: 'Five minutes of reflection is worth 30 of mindless lapping.',
     description: 'Light stretching for forearms and hips. Most importantly: write down 1–2 specific movement lessons from today. The reflection is what locks the learning in.',
     muscles: ['mind', 'forearms', 'hips'],
-    timer: { sec: 300, mode: 'work', label: 'Reflect' },
+    timer: { sec: 0 },
   }),
 ];
 
@@ -413,7 +413,7 @@ const peExercises = (phase) => [
     progression: 'Open-hand only until fully warm.',
     description: 'Wrist mobility, tendon glides, easy climbing. PE sessions are tendon-stressful — give the warm-up its full time.',
     muscles: ['fingers', 'wrists', 'forearms', 'shoulders'],
-    timer: { sec: 1200, mode: 'work', label: 'Warm-up' },
+    timer: { sec: 0 },
   }),
   ex({
     id: '4x4',
@@ -449,7 +449,7 @@ const peExercises = (phase) => [
     progression: 'Contrast soak if anything feels inflamed.',
     description: 'Rubber band finger extensions, wrist rotations, shoulder dislocates. PE work loads fingers and elbows — give them recovery attention.',
     muscles: ['fingers', 'wrists', 'shoulders', 'elbows'],
-    timer: { sec: 600, mode: 'work', label: 'Cool-down' },
+    timer: { sec: 0 },
   }),
 ];
 
@@ -632,19 +632,6 @@ export function getAllMuscles() {
 // Notes content (reference)
 // ----------------------------------------------------------------------------
 export const NOTES_CONTENT = [
-  {
-    id: 'recovery',
-    heading: 'Recovery Protocol',
-    items: [
-      { title: 'Sleep', body: '8 hrs minimum. Tendons repair during sleep. This matters more than almost anything else.' },
-      { title: 'Collagen + vitamin C', body: '15 g collagen peptides + 50 mg vitamin C, taken 30–60 min before climbing. Good evidence for tendon synthesis — particularly relevant with tweaky fingers.' },
-      { title: 'Protein', body: '1.6–2 g per kg of bodyweight daily, spread across meals. Essential for tissue repair.' },
-      { title: 'Finger care', body: 'Always warm up open-hand. Never crimp cold. Massage after sessions. Contrast soak (warm then cold) if anything feels inflamed.' },
-      { title: 'Rest between sessions', body: 'At least one full day between climbing days. Tendons adapt on a slower cycle than muscles.' },
-      { title: 'Active recovery', body: 'Walking, light mobility, gentle stretching on off days. Keeps blood circulating without loading tendons.' },
-      { title: 'Deload weeks', body: 'Every 4th week: cut climbing volume by 40–50%. Adaptation happens during recovery — deloads are when you get stronger.' },
-    ],
-  },
   {
     id: 'projecting',
     heading: 'On Projecting (Phase 2 onwards)',

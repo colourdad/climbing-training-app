@@ -1170,6 +1170,28 @@ a { color: inherit; }
   padding: 0 6px;
 }
 
+/* ----- Assessments view -------------------------------------------------- */
+
+.assessment-list { display: flex; flex-direction: column; }
+.assessment-card { padding: 12px 14px; }
+.assessment-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  box-sizing: border-box;
+  font-variant-numeric: tabular-nums;
+}
+.assessment-input:focus {
+  outline: none;
+  border-color: var(--text-2);
+  background: var(--bg);
+}
+
 /* ----- Misc ------------------------------------------------------------- */
 
 .muted { color: var(--text-2); }

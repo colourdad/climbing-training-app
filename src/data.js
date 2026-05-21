@@ -1,5 +1,6 @@
 // ============================================================================
-// CLIMBING TRAINING PLAN · V6 to V7+ · 16 weeks
+// SEND · 16-Week Climbing Training Program
+// 4 phases (Foundation, Strength, Power Endurance, Performance) + deload + test.
 // Week 1 begins Monday 18 May 2026.
 // ============================================================================
 
@@ -26,35 +27,48 @@ export const SKILL_ORDER = [
 
 // ----------------------------------------------------------------------------
 // Training phases
+// Phase 4 includes weeks 13–14 (Performance) plus week 15 (deep deload) and
+// week 16 (testing). Per-week flags isDeload / isDeepDeload / isTesting drive
+// pattern selection and session content.
 // ----------------------------------------------------------------------------
 export const PHASES = [
   {
     id: 1,
     name: 'Foundation',
-    weeks: [1, 2, 3, 4, 5, 6],
+    weeks: [1, 2, 3, 4],
     accent: '#7A9E5F',
-    focus: 'Build volume at V4–V6. Prioritise quality movement over hard grades. Let tendons adapt before pushing limits.',
-    limitGrade: 'V6–V7',
-    deloadWeek: 6,
+    focus: 'Movement and tissue prep. Slab, footwork drills, easy circuits. Prehab, core fundamentals, mobility — bodyweight and bands only.',
+    limitGrade: 'V0–V2 / 5a–6b',
+    deloadWeek: 4, // natural deload — reduce climb volume 20%
   },
   {
     id: 2,
     name: 'Strength',
-    weeks: [7, 8, 9, 10, 11, 12],
+    weeks: [5, 6, 7, 8],
     accent: '#C2A878',
-    focus: 'Push into V7–V8 territory. Drop problem count, increase rest. Begin projecting — chip away at problems that feel impossible.',
-    limitGrade: 'V7–V8',
-    deloadWeek: 12,
+    focus: 'Max force production. Limit bouldering, crimp/sloper training. Fingerboarding (max hangs) and weighted pulls.',
+    limitGrade: '85–92% max',
+    deloadWeek: 8, // drop Sat Home B; reduce fingerboard volume 30%
   },
   {
     id: 3,
-    name: 'Peak',
-    weeks: [13, 14, 15, 16],
+    name: 'Power Endurance',
+    weeks: [9, 10, 11, 12],
     accent: '#D97757',
-    focus: 'Sharpen and consolidate. Add power endurance. Taper the last two weeks to arrive at outdoor season fresh.',
-    limitGrade: 'V7–V8+',
+    focus: 'Sustain hard moves. 4×4 circuits, linked problems, project burns. Repeater hangs and strength-endurance supersets.',
+    limitGrade: '90–95% max',
+    deloadWeek: 12, // drop Sat Home B; all sessions at 80% volume
+  },
+  {
+    id: 4,
+    name: 'Performance',
+    weeks: [13, 14, 15, 16],
+    accent: '#B88A6F',
+    focus: 'Project redpoints and peak. Maintenance gym only. Week 15 is a half-volume deload, week 16 is testing.',
+    limitGrade: 'Project grade',
     deloadWeek: null,
-    taperWeeks: [15, 16],
+    deepDeloadWeek: 15,
+    testingWeek: 16,
   },
 ];
 
@@ -64,395 +78,224 @@ export function getPhase(weekNumber) {
 
 // ----------------------------------------------------------------------------
 // Exercise definitions
-// Each exercise now carries: description, muscles[], timer{sec, mode, label}
+// Each exercise carries: id, name, sets, rest, category, notes (one-line cue),
+// muscles[], timer{sec, mode?, label?}. Descriptions are intentionally light
+// here — flesh them out in a follow-up pass once the structure feels right.
 // ----------------------------------------------------------------------------
 
 const ex = (o) => o; // identity helper for readability
 
-const limitExercises = (phase, deload = false) => [
-  ex({
-    id: 'warmup',
-    name: 'Joint warm-up',
-    sets: '10 min',
-    rest: '—',
-    category: 'finger_prehab',
-    notes: 'Wrist circles, finger extensions, tendon glides.',
-    progression: 'Non-negotiable with tweaky fingers — never skip or rush it.',
-    description: 'Mobilise wrists in both directions, perform finger tendon glides (fist → hook → straight → claw), gently pull each finger to stretch flexors. Rotate shoulders. The goal is blood flow and gentle joint loading, not stretching cold tissue.',
-    muscles: ['fingers', 'wrists', 'forearms', 'shoulders'],
-    timer: { sec: 0 },
-  }),
-  ex({
-    id: 'easy',
-    name: 'Easy climbing',
-    sets: '20 min · V1–V4',
-    rest: '—',
-    category: 'technique',
-    notes: 'Kilter at a low angle. Open-hand grip only until fully warm.',
-    progression: 'Focus on feet. No crimping cold, ever.',
-    description: 'Climb easy problems on the Kilter at 20–25°. Open-hand grip only. Smooth, controlled movement. The point is to bring up your body temperature and prime the climbing-specific patterns before harder work.',
-    muscles: ['fingers', 'forearms', 'lats', 'core'],
-    timer: { sec: 1200, mode: 'work', label: 'Easy block' },
-  }),
-  ex({
-    id: 'moderate',
-    name: 'Moderate zone',
-    sets: deload ? '15 min · V4–V5' : '20 min · V4–V6',
-    rest: '2–3 min',
-    category: 'technique',
-    notes: deload ? '2–3 problems, ramp up progressively.' : '3–4 problems, ramp up progressively.',
-    progression: 'Movement quality over grade.',
-    description: 'Submaximal problems at V4–V6. Use this block to dial in body position before going to limit attempts. Mix tension-heavy and friction-dependent styles. Rest 2–3 min between problems.',
-    muscles: ['fingers', 'forearms', 'lats', 'core', 'glutes'],
-    timer: { sec: 150, mode: 'rest', label: 'Rest between problems' },
-  }),
-  ex({
-    id: 'limit',
-    name: 'Limit bouldering',
-    sets: deload ? `4–5 attempts · ${phase.limitGrade}` : `6–10 attempts · ${phase.limitGrade}`,
-    rest: '3–5 min',
-    category: 'max_strength',
-    notes: deload
-      ? 'Light projecting only — deload week. Step back from your hardest project.'
-      : `Aim for problems with ~20–40% chance of completing today. ${phase.id === 1 ? 'Kilter for tension, Tension Board for compression.' : 'Project — chip away systematically.'}`,
-    progression: phase.id === 2
-      ? 'Deconstruct the crux move. Finger strength? Body position? Footwork? Commitment? Solve that.'
-      : phase.id === 3 ? 'Stay sharp — do not accumulate fatigue.' : 'Kilter at 20–25°. Earn steeper angles.',
-    description: '6–10 attempts on problems at your absolute current limit. Rest 3–5 min between burns — you should feel almost fully recovered before each go. Pick problems with roughly 20–40% chance of completion today. Quality of attempt matters more than count.',
-    muscles: ['fingers', 'forearms', 'lats', 'biceps', 'core', 'glutes', 'shoulders'],
-    timer: { sec: 240, mode: 'rest', label: 'Rest between burns' },
-  }),
-  ex({
-    id: 'cooldown',
-    name: 'Prehab cool-down',
-    sets: '10 min',
-    rest: '—',
-    category: 'finger_prehab',
-    notes: 'Rubber band finger extensions, wrist rotations, shoulder openers.',
-    progression: 'Massage any tweaky spots. Contrast soak if inflamed.',
-    description: 'Wrap rubber band around fingertips and extend against resistance — strengthens extensors. Slow wrist rotations. Shoulder dislocates with a band. Massage forearms and any tweaky finger pulleys with thumb pressure.',
-    muscles: ['fingers', 'wrists', 'forearm extensors', 'shoulders'],
-    timer: { sec: 0 },
-  }),
+// ----- Limit session (Monday) -----------------------------------------------
+const limitExercises = (phase, deload = false) => {
+  if (phase.id === 1) return [
+    ex({ id: 'warmup',          name: 'Warm-up traversing',          sets: '15 min',           rest: '—',       category: 'finger_prehab', notes: 'Flowing movement; joint circles throughout; stay easy.',                      muscles: ['fingers', 'wrists', 'forearms', 'shoulders'], timer: { sec: 0 } }),
+    ex({ id: 'quiet_feet',      name: 'Quiet-feet problems',         sets: '3×10 problems',    rest: '—',       category: 'technique',     notes: 'V0–V1 only; place foot with zero noise; repeat each 3×; no rushing.',         muscles: ['feet', 'core', 'glutes'],                      timer: { sec: 0 } }),
+    ex({ id: 'slab_balance',    name: 'Slab & balance problems',     sets: '8–10 problems',    rest: '—',       category: 'technique',     notes: 'Weight over feet; hip-in and hip-out practice; V0–V2.',                      muscles: ['feet', 'core', 'glutes', 'hip flexors'],       timer: { sec: 0 } }),
+    ex({ id: 'slow_motion',     name: 'Slow-motion repeat',          sets: '5 problems × 3 reps', rest: '—',    category: 'technique',     notes: '3 s per placement; V0–V1; feel every weight shift.',                         muscles: ['feet', 'core', 'glutes'],                      timer: { sec: 0 } }),
+    ex({ id: 'cooldown',        name: 'Cool-down',                   sets: '10 min',           rest: '—',       category: 'mobility',      notes: 'Easy traverse, forearm and shoulder stretching.',                            muscles: ['forearms', 'shoulders'],                       timer: { sec: 0 } }),
+  ];
+  if (phase.id === 2) return [
+    ex({ id: 'warmup_pyramid',  name: 'Warm-up pyramid',             sets: '15–20 min',        rest: '—',       category: 'finger_prehab', notes: 'Climb easy → moderate; last 5 min at 70% intensity before hard problems.',   muscles: ['fingers', 'forearms', 'shoulders'],            timer: { sec: 0 } }),
+    ex({ id: 'limit',           name: 'Limit bouldering',            sets: '8 problems',       rest: '3–5 min', category: 'max_strength',  notes: '85–92% of max grade. Quality > quantity.',                                   muscles: ['fingers', 'forearms', 'lats', 'core'],         timer: { sec: 240, mode: 'rest', label: 'Rest between attempts' } }),
+    ex({ id: 'crimp_sloper',    name: 'Crimp/sloper alternating set',sets: '6 problems × 2 attempts', rest: '3 min', category: 'max_strength', notes: '3 crimp-intensive, 3 sloper; rest 3 min between each.',                    muscles: ['fingers', 'forearms'],                         timer: { sec: 180, mode: 'rest', label: 'Rest between problems' } }),
+    ex({ id: 'footwork_hard',   name: 'Footwork refinement on hard terrain', sets: '3 problems × 5 reps', rest: '—', category: 'technique', notes: 'Repeat for footwork precision only; note any foot improvements.',         muscles: ['feet', 'core'],                                timer: { sec: 0 } }),
+    ex({ id: 'cooldown',        name: 'Cool-down traverse',          sets: '10 min',           rest: '—',       category: 'mobility',      notes: 'Pump target 2/10; shake arms frequently.',                                   muscles: ['forearms'],                                    timer: { sec: 0 } }),
+  ];
+  if (phase.id === 3) return [
+    ex({ id: 'warmup_pyramid',  name: 'Warm-up pyramid',             sets: '20 min',           rest: '—',       category: 'finger_prehab', notes: 'Thorough — ankle, hip, shoulder, wrist; graduate to 75% intensity.',         muscles: ['fingers', 'forearms', 'shoulders'],            timer: { sec: 0 } }),
+    ex({ id: 'limit',           name: 'Limit bouldering',            sets: '6–8 problems',     rest: '4–5 min', category: 'max_strength',  notes: '90–95% of max grade. Up to 3 attempts per problem.',                          muscles: ['fingers', 'forearms', 'lats', 'core'],         timer: { sec: 270, mode: 'rest', label: 'Rest between attempts' } }),
+    ex({ id: 'crux_isolation',  name: 'Crux move isolation',         sets: '2 problems × 10 reps', rest: '90 s', category: 'power',       notes: 'Identify the single hardest move on each; isolate and drill 10×.',           muscles: ['fingers', 'forearms', 'lats'],                 timer: { sec: 90, mode: 'rest', label: 'Rest between reps' } }),
+    ex({ id: 'dynamic_movement',name: 'Dynamic movement',            sets: '5 problems × 3 attempts', rest: '—',category: 'power',         notes: 'Dynos, deadpoints, momentum-based sequences; commit fully.',                 muscles: ['lats', 'core', 'shoulders'],                   timer: { sec: 0 } }),
+    ex({ id: 'cooldown',        name: 'Cool-down',                   sets: '10 min',           rest: '—',       category: 'mobility',      notes: 'Moderate circuit V0–V1; thorough stretching.',                               muscles: ['forearms', 'hips', 'shoulders'],               timer: { sec: 0 } }),
+  ];
+  // Phase 4 — Performance (project attempts)
+  return [
+    ex({ id: 'warmup_pyramid',  name: 'Warm-up pyramid',             sets: '20–25 min',        rest: '—',       category: 'finger_prehab', notes: 'More thorough than any previous phase; V0 → 70% → 85% → 95%.',                muscles: ['fingers', 'forearms', 'shoulders'],            timer: { sec: 0 } }),
+    ex({ id: 'visualisation',   name: 'Visualisation pre-attempt',   sets: '5 min / attempt',  rest: '—',       category: 'technique',     notes: 'Eyes closed; run the entire sequence; commit to the beta.',                  muscles: ['mind'],                                        timer: { sec: 0 } }),
+    ex({ id: 'redpoint',        name: 'Redpoint attempts',           sets: '5–8 attempts',     rest: '12–15 min', category: 'max_strength',notes: 'Full rest between attempts. Do not attempt if mentally not ready.',          muscles: ['fingers', 'forearms', 'lats', 'core'],         timer: { sec: 780, mode: 'rest', label: 'Rest between attempts' } }),
+    ex({ id: 'crux_isolation',  name: 'Crux isolation (if not sending)', sets: '20 min',       rest: '—',       category: 'power',         notes: 'Only if a specific move remains unsolved. Max 3 attempts per move.',         muscles: ['fingers', 'forearms', 'lats'],                 timer: { sec: 0 } }),
+    ex({ id: 'cooldown',        name: 'Cool-down',                   sets: '10 min',           rest: '—',       category: 'mobility',      notes: 'Low-intensity traversing; decompress; eat something.',                       muscles: ['forearms'],                                    timer: { sec: 0 } }),
+  ];
+};
+
+// ----- Volume session (Wed in 3-climb, Thu in 2-climb) ----------------------
+const volumeExercises = (phase, deload = false) => {
+  if (phase.id === 1) return [
+    ex({ id: 'warmup',          name: 'Warm-up',                     sets: '15 min',           rest: '—',       category: 'finger_prehab', notes: 'Gentle movement, joint prep.',                                                muscles: ['fingers', 'shoulders'],                        timer: { sec: 0 } }),
+    ex({ id: 'circuit_1',       name: 'Continuous circuit · Set 1',  sets: '30 min',           rest: '10 min',  category: 'muscular_endurance', notes: 'Non-stop V0–V1; target 20+ problems; pump target 3/10.',                muscles: ['fingers', 'forearms', 'lats', 'core'],         timer: { sec: 0 } }),
+    ex({ id: 'circuit_2',       name: 'Continuous circuit · Set 2',  sets: '25 min',           rest: '—',       category: 'muscular_endurance', notes: 'Vary terrain: slab, vertical, slight overhang; V0–V2.',                  muscles: ['fingers', 'forearms', 'lats', 'core'],         timer: { sec: 0 } }),
+    ex({ id: 'terrain_sample',  name: 'Terrain sampling',            sets: '15 min',           rest: '—',       category: 'technique',     notes: 'One problem on every angle in the gym.',                                      muscles: ['core', 'lats'],                                timer: { sec: 0 } }),
+    ex({ id: 'cooldown',        name: 'Cool-down',                   sets: '10 min',           rest: '—',       category: 'mobility',      notes: 'Gentle movement; forearm massage; wrist stretches.',                          muscles: ['forearms', 'wrists'],                          timer: { sec: 0 } }),
+  ];
+  if (phase.id === 2) return [
+    ex({ id: 'warmup',          name: 'Warm-up',                     sets: '15 min',           rest: '—',       category: 'finger_prehab', notes: 'Easy movement, joint prep.',                                                  muscles: ['fingers', 'shoulders'],                        timer: { sec: 0 } }),
+    ex({ id: '4x4',             name: '4×4 circuits',                sets: '4 rounds',         rest: '4 min',   category: 'muscular_endurance', notes: 'V1–V2 problems. 4 back-to-back, rest 4 min exactly. Last round hard.',  muscles: ['fingers', 'forearms', 'lats', 'core'],         timer: { sec: 240, mode: 'rest', label: 'Rest between rounds' } }),
+    ex({ id: 'flash_circuit',   name: 'Moderate flash circuit',      sets: '20 problems',      rest: '—',       category: 'technique',     notes: 'V2–V3; single attempt per problem; record flash vs 2-go counts.',             muscles: ['fingers', 'forearms', 'lats'],                 timer: { sec: 0 } }),
+    ex({ id: 'link_sets',       name: 'Link sets',                   sets: '5 × 2 linked',     rest: '2 min',   category: 'muscular_endurance', notes: 'Pick 2 adjacent problems, climb both without stepping off.',            muscles: ['fingers', 'forearms', 'lats', 'core'],         timer: { sec: 120, mode: 'rest', label: 'Rest between sets' } }),
+    ex({ id: 'cooldown',        name: 'Cool-down',                   sets: '10 min',           rest: '—',       category: 'mobility',      notes: 'Easy problems, forearm stretching.',                                          muscles: ['forearms'],                                    timer: { sec: 0 } }),
+  ];
+  if (phase.id === 3) return [
+    ex({ id: 'warmup',          name: 'Warm-up',                     sets: '15 min',           rest: '—',       category: 'finger_prehab', notes: 'Raise HR to 60–65% max.',                                                     muscles: ['fingers', 'shoulders'],                        timer: { sec: 0 } }),
+    ex({ id: '4x4_pe',          name: '4×4 PE circuits',             sets: '4 rounds',         rest: '4 min',   category: 'muscular_endurance', notes: 'V3–V4 problems. No rest within round. Final round must feel very hard.', muscles: ['fingers', 'forearms', 'lats', 'core'],         timer: { sec: 240, mode: 'rest', label: 'Rest between rounds' } }),
+    ex({ id: 'traverse',        name: 'Traverse circuits',           sets: '4 × 5 min',        rest: '3 min',   category: 'muscular_endurance', notes: 'Continuous traversing at pump 6/10; do not stop mid-traverse.',          muscles: ['fingers', 'forearms', 'lats'],                 timer: { sec: 180, mode: 'rest', label: 'Rest between traverses' } }),
+    ex({ id: 'linked',          name: 'Linked boulder sequences',    sets: '6 sets',           rest: '4 min',   category: 'muscular_endurance', notes: 'Connect 3 different problems back-to-back without stepping off.',        muscles: ['fingers', 'forearms', 'lats', 'core'],         timer: { sec: 240, mode: 'rest', label: 'Rest between sets' } }),
+    ex({ id: 'cooldown',        name: 'Cool-down',                   sets: '10 min',           rest: '—',       category: 'mobility',      notes: 'V0 laps; forearm drainage; stretching.',                                      muscles: ['forearms'],                                    timer: { sec: 0 } }),
+  ];
+  // Phase 4 — Performance Volume (comfort grade)
+  return [
+    ex({ id: 'warmup',          name: 'Warm-up',                     sets: '15 min',           rest: '—',       category: 'finger_prehab', notes: 'Moderate.',                                                                    muscles: ['fingers', 'shoulders'],                        timer: { sec: 0 } }),
+    ex({ id: 'free_climb',      name: 'Free climbing at comfort grade', sets: '45 min',        rest: '—',       category: 'technique',     notes: '1–2 grades below max; flash everything; stay fluid; no gripping hard.',       muscles: ['fingers', 'forearms', 'lats', 'core'],         timer: { sec: 0 } }),
+    ex({ id: 'flash_challenge', name: 'Flash challenge',             sets: '15 problems',      rest: '—',       category: 'technique',     notes: 'Record how many you flash (target 12+/15 at comfortable grade).',             muscles: ['fingers', 'forearms', 'lats'],                 timer: { sec: 0 } }),
+    ex({ id: 'traverse',        name: 'Traverse circuits',           sets: '3 × 5 min',        rest: '3 min',   category: 'muscular_endurance', notes: 'Moderate pump 5/10; stay relaxed.',                                      muscles: ['forearms', 'lats'],                            timer: { sec: 180, mode: 'rest', label: 'Rest between traverses' } }),
+  ];
+};
+
+// ----- Technique session (Fri in 3-climb weeks only) ------------------------
+const techExercises = (phase, deload = false) => {
+  if (phase.id === 1) return [
+    ex({ id: 'warmup',          name: 'Warm-up',                     sets: '15 min',           rest: '—',       category: 'finger_prehab', notes: 'Easy movement.',                                                              muscles: ['fingers', 'shoulders'],                        timer: { sec: 0 } }),
+    ex({ id: 'hip_positioning', name: 'Hip positioning drills',      sets: '10 problems',      rest: '—',       category: 'technique',     notes: 'Consciously rotate hip into each move; V0–V1; slow.',                         muscles: ['hip flexors', 'glutes', 'core'],               timer: { sec: 0 } }),
+    ex({ id: 'precise_feet',    name: 'Footwork: precise placements', sets: '3 problems × 5 reps', rest: '—',  category: 'technique',     notes: 'Pick the smallest part of the hold; zero readjustment.',                      muscles: ['feet', 'core'],                                timer: { sec: 0 } }),
+    ex({ id: 'straight_arm',    name: 'Straight-arm climbing',       sets: '8 problems',       rest: '—',       category: 'technique',     notes: 'Keep arms straight as long as possible on each problem; V0–V2.',              muscles: ['lats', 'core', 'shoulders'],                   timer: { sec: 0 } }),
+    ex({ id: 'route_reading',   name: 'Reading and visualisation',   sets: '5 problems',       rest: '—',       category: 'technique',     notes: 'Read the full problem before touching the wall; climb exactly as planned.',   muscles: ['mind'],                                        timer: { sec: 0 } }),
+    ex({ id: 'cooldown',        name: 'Cool-down',                   sets: '10 min',           rest: '—',       category: 'mobility',      notes: 'Stretching, hip flexors, thoracic rotation.',                                 muscles: ['hip flexors', 'thoracic spine'],               timer: { sec: 0 } }),
+  ];
+  if (phase.id === 2) return [
+    ex({ id: 'warmup',          name: 'Warm-up',                     sets: '15 min',           rest: '—',       category: 'finger_prehab', notes: 'Easy movement.',                                                              muscles: ['fingers', 'shoulders'],                        timer: { sec: 0 } }),
+    ex({ id: 'momentum',        name: 'Momentum and deadpoint drills', sets: '8 problems',     rest: '—',       category: 'power',         notes: 'Use body swing and hip pop rather than pure arm pull; V1–V3.',                muscles: ['core', 'glutes', 'shoulders'],                 timer: { sec: 0 } }),
+    ex({ id: 'drop_knee',       name: 'Drop-knee practice',          sets: '3 problems × 5 reps', rest: '—',   category: 'technique',     notes: 'Identify problems where a drop-knee improves reach; repeat to groove.',       muscles: ['hip flexors', 'glutes', 'core'],               timer: { sec: 0 } }),
+    ex({ id: 'flagging',        name: 'Flagging circuits',           sets: '6 problems',       rest: '—',       category: 'technique',     notes: 'Consciously flag on every move possible to prevent barn-door; V2–V3.',        muscles: ['core', 'glutes', 'hip flexors'],               timer: { sec: 0 } }),
+    ex({ id: 'route_reading',   name: 'Route reading — then climb',  sets: '5 problems',       rest: '—',       category: 'technique',     notes: '90 s reading, then climb from memory; check moves vs plan.',                  muscles: ['mind'],                                        timer: { sec: 0 } }),
+    ex({ id: 'cooldown',        name: 'Cool-down',                   sets: '10 min',           rest: '—',       category: 'mobility',      notes: 'Easy movement, hip and shoulder mobility.',                                   muscles: ['hips', 'shoulders'],                           timer: { sec: 0 } }),
+  ];
+  if (phase.id === 3) return [
+    ex({ id: 'warmup',          name: 'Warm-up',                     sets: '15 min',           rest: '—',       category: 'finger_prehab', notes: 'Moderate pace.',                                                              muscles: ['fingers', 'shoulders'],                        timer: { sec: 0 } }),
+    ex({ id: 'quality_hard',    name: 'Movement quality on hard terrain', sets: '5 problems × 3 reps', rest: '—', category: 'technique', notes: '80% max; focus on body position and foot precision — not completion.',       muscles: ['feet', 'core', 'glutes'],                      timer: { sec: 0 } }),
+    ex({ id: 'hooks',           name: 'Heel-hook / toe-hook practice', sets: '5 problems',     rest: '—',       category: 'technique',     notes: 'Find or set problems requiring hooks; master the engagement sequence.',      muscles: ['glutes', 'core', 'hamstrings'],                timer: { sec: 0 } }),
+    ex({ id: 'compression',     name: 'Compression and squeeze technique', sets: '5 problems', rest: '—',       category: 'body_tension',  notes: 'Wide problems; use body tension and inward pressure; V3–V4.',                 muscles: ['core', 'lats', 'pecs'],                        timer: { sec: 0 } }),
+    ex({ id: 'onsight',         name: 'Onsight simulation',          sets: '5 problems',       rest: '—',       category: 'technique',     notes: 'No prior inspection. First attempt only. Evaluate your decision-making.',     muscles: ['mind'],                                        timer: { sec: 0 } }),
+    ex({ id: 'cooldown',        name: 'Cool-down',                   sets: '10 min',           rest: '—',       category: 'mobility',      notes: 'Light movement, thorough stretching.',                                        muscles: ['forearms', 'hips'],                            timer: { sec: 0 } }),
+  ];
+  // Phase 4 — Performance Technique (style refinement)
+  return [
+    ex({ id: 'warmup',          name: 'Warm-up',                     sets: '15 min',           rest: '—',       category: 'finger_prehab', notes: 'Easy movement.',                                                              muscles: ['fingers', 'shoulders'],                        timer: { sec: 0 } }),
+    ex({ id: 'performance',     name: 'Performance climbing at hard-but-doable grade', sets: '8 problems', rest: '—', category: 'technique', notes: 'Not quite limit; focus on efficiency, minimalism, style; V(max-1)–V(max-2).', muscles: ['fingers', 'forearms', 'lats', 'core'],         timer: { sec: 0 } }),
+    ex({ id: 'beta_variations', name: 'Problem variations (same start, different beta)', sets: '3 problems × 3 betas', rest: '—', category: 'technique', notes: 'Find 3 distinct ways to do the same problem.',                          muscles: ['mind'],                                        timer: { sec: 0 } }),
+    ex({ id: 'cooldown',        name: 'Cool-down',                   sets: '10 min',           rest: '—',       category: 'mobility',      notes: 'Stretching.',                                                                 muscles: ['forearms'],                                    timer: { sec: 0 } }),
+  ];
+};
+
+// ----- Home Gym A (Tuesday — both week types) -------------------------------
+const homeAExercises = (phase, deload = false) => {
+  if (phase.id === 1) return [
+    ex({ id: 'band_pull_aparts',name: 'Band pull-aparts',            sets: '3 × 15',           rest: '60 s',    category: 'finger_prehab', notes: 'Arms straight out front; pull to T; light band; slow and controlled.',       muscles: ['shoulders', 'rear delts'],                     timer: { sec: 0 } }),
+    ex({ id: 'ytwl',            name: 'YTWL raises',                 sets: '3 × 8 each',       rest: '60 s',    category: 'finger_prehab', notes: 'Prone or incline bench; scapular focus; very light weight.',                  muscles: ['shoulders', 'rear delts', 'rhomboids'],        timer: { sec: 0 } }),
+    ex({ id: 'face_pulls',      name: 'Face pulls',                  sets: '3 × 15',           rest: '60 s',    category: 'finger_prehab', notes: 'Band or cable; pull to forehead; finish with external rotation.',             muscles: ['rear delts', 'rhomboids'],                     timer: { sec: 0 } }),
+    ex({ id: 'ext_rotation',    name: 'External shoulder rotation',  sets: '3 × 12/side',      rest: '60 s',    category: 'finger_prehab', notes: 'Elbow at 90° against ribs; band or 1 kg; 3-1-3 tempo.',                       muscles: ['rotator cuff', 'shoulders'],                   timer: { sec: 0 } }),
+    ex({ id: 'dead_bug',        name: 'Dead bug',                    sets: '3 × 10/side',      rest: '60 s',    category: 'body_tension',  notes: 'Lower back pressed to floor; slow; breathe out on extension.',                muscles: ['core', 'abs'],                                 timer: { sec: 0 } }),
+    ex({ id: 'forearm_plank',   name: 'Forearm plank',               sets: '3 × 30 s',         rest: '60 s',    category: 'body_tension',  notes: 'Rigid body; breathe continuously; do not hold breath.',                       muscles: ['core', 'abs'],                                 timer: { sec: 30, mode: 'work', label: 'Hold' } }),
+    ex({ id: 'hollow_body',     name: 'Hollow body hold',            sets: '3 × 20 s',         rest: '60 s',    category: 'body_tension',  notes: 'Arms overhead; lower back to floor; tuck knees if needed.',                   muscles: ['core', 'abs', 'hip flexors'],                  timer: { sec: 20, mode: 'work', label: 'Hold' } }),
+    ex({ id: 'glute_bridges',   name: 'Glute bridges',               sets: '3 × 15',           rest: '60 s',    category: 'base_strength', notes: 'Feet hip-width; drive through heels; hold 2 s at top.',                       muscles: ['glutes', 'hamstrings'],                        timer: { sec: 0 } }),
+    ex({ id: 'hip_stretch',     name: 'Hip flexor stretch',          sets: '60 s/side',        rest: '—',       category: 'mobility',      notes: 'Lunge, posterior tilt; breathe into the stretch.',                            muscles: ['hip flexors'],                                 timer: { sec: 0 } }),
+    ex({ id: 'thoracic',        name: 'Thoracic rotation',           sets: '10/side',          rest: '—',       category: 'mobility',      notes: 'Hands behind head; rotate as far as comfortable.',                            muscles: ['thoracic spine'],                              timer: { sec: 0 } }),
+    ex({ id: 'wrist_mobility',  name: 'Wrist mobility',              sets: '2 min',            rest: '—',       category: 'mobility',      notes: 'Circles, flexion/extension, prayer, reverse prayer.',                         muscles: ['wrists', 'forearms'],                          timer: { sec: 0 } }),
+  ];
+  if (phase.id === 2) return [
+    ex({ id: 'max_hangs_20',    name: 'Fingerboard: 7-s max hangs, 20 mm open hand', sets: '6 sets', rest: '3–4 min', category: 'max_strength', notes: 'Add weight to reach failure at 10–12 s. Log every load.',               muscles: ['fingers', 'forearms'],                         timer: { sec: 7, mode: 'work', label: 'Hang' } }),
+    ex({ id: 'pinch_hangs',     name: 'Fingerboard: 45 mm pinch hangs', sets: '5 × 10 s',      rest: '2 min',   category: 'max_strength',  notes: 'BW or lightly loaded; open and close hand between sets.',                     muscles: ['fingers', 'forearms', 'thumb'],                timer: { sec: 10, mode: 'work', label: 'Hang' } }),
+    ex({ id: 'weighted_pulls',  name: 'Weighted pull-ups',           sets: '5 × 3',            rest: '3 min',   category: 'max_strength',  notes: 'Add 10–20% BW. 3 s eccentric. Full extension at bottom.',                     muscles: ['lats', 'biceps', 'rear delts'],                timer: { sec: 180, mode: 'rest', label: 'Rest between sets' } }),
+    ex({ id: 'lock_offs',       name: '90-degree lock-off holds',    sets: '3 × 10 s/arm',     rest: '2 min',   category: 'max_strength',  notes: 'Hold at 90° elbow flexion; resist gravity; log each arm.',                    muscles: ['biceps', 'lats', 'core'],                      timer: { sec: 10, mode: 'work', label: 'Hold' } }),
+    ex({ id: 'knee_raises',     name: 'Hanging knee raises',         sets: '3 × 12',           rest: '60 s',    category: 'body_tension',  notes: 'Full hang; raise knees to chest; slow lower; no swing.',                      muscles: ['abs', 'hip flexors'],                          timer: { sec: 0 } }),
+    ex({ id: 'front_lever_tuck',name: 'Front lever tuck hold',       sets: '3 × 15 s',         rest: '60 s',    category: 'body_tension',  notes: 'Arms straight, knees tucked, body horizontal.',                               muscles: ['lats', 'core', 'abs'],                         timer: { sec: 15, mode: 'work', label: 'Hold' } }),
+    ex({ id: 'pushups',         name: 'Push-ups (antagonist)',       sets: '3 × 15',           rest: '60 s',    category: 'base_strength', notes: '2-0-2 tempo; no sagging; keep shoulder healthy.',                             muscles: ['chest', 'triceps', 'shoulders'],               timer: { sec: 0 } }),
+    ex({ id: 'wrist_ext',       name: 'Wrist extensions',            sets: '3 × 15',           rest: '60 s',    category: 'finger_prehab', notes: 'Rice bucket, theraband, or plate; critical for pulley health.',               muscles: ['forearm extensors', 'wrists'],                 timer: { sec: 0 } }),
+  ];
+  if (phase.id === 3) return [
+    ex({ id: 'repeaters_20',    name: 'Repeaters: 20 mm, 7 s on / 3 s off', sets: '3 × 6 reps', rest: '3–4 min', category: 'muscular_endurance', notes: 'BW, open hand. Pump 7/10 by end of set.',                                muscles: ['fingers', 'forearms'],                         timer: { sec: 7, mode: 'work', label: 'Hang' } }),
+    ex({ id: 'repeaters_25',    name: 'Repeaters: 25 mm, 7 s on / 3 s off', sets: '2 × 6 reps', rest: '3–4 min', category: 'muscular_endurance', notes: 'Same protocol, slightly larger edge.',                                  muscles: ['fingers', 'forearms'],                         timer: { sec: 7, mode: 'work', label: 'Hang' } }),
+    ex({ id: 'pull_max_out',    name: 'Weighted pull-ups → BW max-out', sets: '3 rounds',      rest: '3 min',   category: 'muscular_endurance', notes: '3 reps at 15% BW added → drop weight → pull to failure.',                muscles: ['lats', 'biceps'],                              timer: { sec: 180, mode: 'rest', label: 'Rest between rounds' } }),
+    ex({ id: 'ring_pushups',    name: 'Ring push-ups',               sets: '3 × 15',           rest: '60 s',    category: 'base_strength', notes: 'Rings at knee height; full range; slow descent.',                             muscles: ['chest', 'triceps', 'shoulders'],               timer: { sec: 0 } }),
+    ex({ id: 'pistol_squats',   name: 'Pistol squats',               sets: '3 × 8/leg',        rest: '60 s',    category: 'base_strength', notes: 'Control descent; hold 2 s at bottom; use wall for balance initially.',        muscles: ['quads', 'glutes', 'core'],                     timer: { sec: 0 } }),
+    ex({ id: 'l_sit',           name: 'L-sit hold',                  sets: '3 × max time',     rest: '2 min',   category: 'body_tension',  notes: 'Straight arms and legs; bent knees acceptable.',                              muscles: ['core', 'abs', 'hip flexors', 'triceps'],       timer: { sec: 0 } }),
+    ex({ id: 'compression',     name: 'Compression block / knee squeeze', sets: '3 × 8',       rest: '60 s',    category: 'body_tension',  notes: 'Seated; squeeze large block between knees; builds body-tension strength.',    muscles: ['adductors', 'core'],                           timer: { sec: 0 } }),
+  ];
+  // Phase 4 — Maintenance
+  return [
+    ex({ id: 'max_hangs_20',    name: 'Fingerboard: 7-s max hangs, 20 mm', sets: '4 sets',     rest: '4 min',   category: 'max_strength',  notes: 'Maintain Phase 3 contact strength; same load; no new PBs now.',               muscles: ['fingers', 'forearms'],                         timer: { sec: 7, mode: 'work', label: 'Hang' } }),
+    ex({ id: 'weighted_pulls',  name: 'Weighted pull-ups',           sets: '3 × 3',            rest: '3 min',   category: 'max_strength',  notes: 'Same load as Phase 3; maintenance only.',                                     muscles: ['lats', 'biceps'],                              timer: { sec: 180, mode: 'rest', label: 'Rest between sets' } }),
+    ex({ id: 'system_board',    name: 'Specificity: system board moves', sets: '15 min',        rest: '—',       category: 'technique',     notes: 'Mimic hold types and movement patterns from your project.',                    muscles: ['fingers', 'forearms', 'lats', 'core'],         timer: { sec: 0 } }),
+    ex({ id: 'antagonist',      name: 'Light antagonist: push-ups + bands', sets: '2 × 15 + 2 × 20', rest: '60 s', category: 'base_strength', notes: 'Keep shoulder health; minimal fatigue.',                                  muscles: ['chest', 'shoulders', 'rear delts'],            timer: { sec: 0 } }),
+    ex({ id: 'core',            name: 'Core: front lever + L-sit',   sets: '2 × max time each',rest: '60 s',    category: 'body_tension',  notes: 'Maintenance volume only.',                                                    muscles: ['core', 'lats', 'abs'],                         timer: { sec: 0 } }),
+    ex({ id: 'mobility',        name: 'Mobility routine',            sets: '10 min',           rest: '—',       category: 'mobility',      notes: 'Full body — hips, shoulders, wrists; non-negotiable.',                        muscles: ['hips', 'shoulders', 'wrists'],                 timer: { sec: 0 } }),
+  ];
+};
+
+// ----- Home Gym B (Sat in 3-climb, Fri in 2-climb) --------------------------
+const homeBExercises = (phase, deload = false) => {
+  if (phase.id === 1) return [
+    ex({ id: 'ring_rows',       name: 'Ring rows or TRX rows',       sets: '3 × 10',           rest: '60 s',    category: 'base_strength', notes: 'Body at ~45° angle; pull chest to hands; 3 s descent.',                       muscles: ['lats', 'rhomboids', 'biceps'],                 timer: { sec: 0 } }),
+    ex({ id: 'band_pull_aparts',name: 'Band pull-aparts',            sets: '2 × 20',           rest: '60 s',    category: 'finger_prehab', notes: 'Faster tempo than Home A; maintain form.',                                    muscles: ['shoulders', 'rear delts'],                     timer: { sec: 0 } }),
+    ex({ id: 'pushups',         name: 'Push-ups',                    sets: '3 × 12',           rest: '60 s',    category: 'base_strength', notes: 'Straight body; full range; slow descent; antagonist work.',                  muscles: ['chest', 'triceps', 'shoulders'],               timer: { sec: 0 } }),
+    ex({ id: 'dead_hang',       name: 'Hanging dead hangs',          sets: '3 × 20 s',         rest: '60 s',    category: 'finger_prehab', notes: 'Relax shoulders; feel the decompression; gentle swing OK.',                   muscles: ['fingers', 'forearms', 'shoulders'],            timer: { sec: 20, mode: 'work', label: 'Hang' } }),
+    ex({ id: 'frog_hold',       name: 'Frog hip mobility hold',      sets: '2 × 45 s',         rest: '60 s',    category: 'mobility',      notes: 'Face down; knees out; ease hips toward floor; no forcing.',                   muscles: ['hips', 'adductors'],                           timer: { sec: 45, mode: 'work', label: 'Hold' } }),
+    ex({ id: 'pigeon',          name: 'Pigeon stretch',              sets: '60 s/side',        rest: '—',       category: 'mobility',      notes: 'Deep hip external rotation; use a pad under the hip.',                        muscles: ['glutes', 'hips'],                              timer: { sec: 0 } }),
+    ex({ id: 'childs_pose',     name: "Child's pose with lat stretch",sets: '60 s/side',       rest: '—',       category: 'mobility',      notes: 'Reach one arm long; feel lat and shoulder open.',                             muscles: ['lats', 'shoulders'],                           timer: { sec: 0 } }),
+  ];
+  if (phase.id === 2) return [
+    ex({ id: 'max_hangs_25',    name: 'Fingerboard: 7-s max hangs, 25 mm edge', sets: '4 sets',rest: '3–4 min', category: 'max_strength',  notes: 'Slightly larger edge; same rest protocol; log weight.',                       muscles: ['fingers', 'forearms'],                         timer: { sec: 7, mode: 'work', label: 'Hang' } }),
+    ex({ id: 'one_arm_assisted',name: 'One-arm assisted dead hangs', sets: '3 × 10 s/arm',     rest: '2 min',   category: 'max_strength',  notes: 'Band-assisted; enough support to hold 10 s with effort; log assistance.',     muscles: ['fingers', 'forearms', 'lats'],                 timer: { sec: 10, mode: 'work', label: 'Hang' } }),
+    ex({ id: 'ring_rows_elev',  name: 'Ring rows — feet elevated',   sets: '3 × 10',           rest: '60 s',    category: 'base_strength', notes: 'Body horizontal; pull chest to rings; 3 s descent.',                          muscles: ['lats', 'rhomboids', 'biceps'],                 timer: { sec: 0 } }),
+    ex({ id: 'ext_press',       name: 'Shoulder external rotation + overhead press', sets: '3 × 10', rest: '60 s', category: 'finger_prehab', notes: 'Band: ext. rotation → press → return; slow and controlled.',             muscles: ['shoulders', 'rotator cuff'],                   timer: { sec: 0 } }),
+    ex({ id: 'weighted_plank',  name: 'Weighted plank',              sets: '3 × 40 s',         rest: '60 s',    category: 'body_tension',  notes: 'Weight plate on back; elbows under shoulders.',                               muscles: ['core', 'abs'],                                 timer: { sec: 40, mode: 'work', label: 'Hold' } }),
+    ex({ id: 'hip_9090',        name: 'Hip 90/90 transitions',       sets: '10/side',          rest: '—',       category: 'mobility',      notes: 'Maintain Phase 1 hip mobility gains; do not let these slip.',                  muscles: ['hips', 'glutes'],                              timer: { sec: 0 } }),
+    ex({ id: 'forearm_stretch', name: 'Forearm stretch routine',     sets: '5 min',            rest: '—',       category: 'mobility',      notes: 'Wrist extension stretch, prayer, reverse prayer, forearm cross-body.',         muscles: ['forearms', 'wrists'],                          timer: { sec: 0 } }),
+  ];
+  if (phase.id === 3) return [
+    ex({ id: 'max_hangs_20',    name: 'Fingerboard: 7-s max hangs, 20 mm', sets: '4 sets',     rest: '4 min',   category: 'max_strength',  notes: 'Maintain Phase 2 strength; same load; log weight.',                            muscles: ['fingers', 'forearms'],                         timer: { sec: 7, mode: 'work', label: 'Hang' } }),
+    ex({ id: 'explosive_pulls', name: 'Explosive pull-ups',          sets: '5 × 3',            rest: '3 min',   category: 'power',         notes: 'Pull as fast as possible; feel the acceleration; no kipping.',                muscles: ['lats', 'biceps'],                              timer: { sec: 180, mode: 'rest', label: 'Rest between sets' } }),
+    ex({ id: 'one_arm_assisted',name: 'One-arm assisted dead hangs', sets: '3 × 10 s/arm',     rest: '2 min',   category: 'max_strength',  notes: 'Log assistance level; aim to reduce vs Phase 2.',                              muscles: ['fingers', 'forearms', 'lats'],                 timer: { sec: 10, mode: 'work', label: 'Hang' } }),
+    ex({ id: 'trx_pushups',     name: 'TRX ring push-ups',           sets: '3 × 12',           rest: '60 s',    category: 'base_strength', notes: 'Rings at chest height; unstable surface for shoulder health.',                muscles: ['chest', 'shoulders'],                          timer: { sec: 0 } }),
+    ex({ id: 'band_pull_aparts',name: 'Band pull-aparts',            sets: '2 × 20',           rest: '60 s',    category: 'finger_prehab', notes: 'Maintain shoulder health under increased training load.',                     muscles: ['rear delts', 'rhomboids'],                     timer: { sec: 0 } }),
+    ex({ id: 'mobility',        name: 'Hip and shoulder mobility',   sets: '10 min',           rest: '—',       category: 'mobility',      notes: 'Non-negotiable — do not let mobility decay under fatigue.',                    muscles: ['hips', 'shoulders'],                           timer: { sec: 0 } }),
+  ];
+  // Phase 4 — Maintenance B (same content as Home A maintenance)
+  return homeAExercises(phase, deload);
+};
+
+// ----- Light Home (Week 15 deload Tuesday) ----------------------------------
+const lightHomeExercises = () => [
+  ex({ id: 'bands',             name: 'Band work',                   sets: '15 min',           rest: '—',       category: 'finger_prehab', notes: 'Light band work only; no fingerboarding; no loaded pulling.',                  muscles: ['shoulders', 'rear delts', 'rotator cuff'],     timer: { sec: 0 } }),
+  ex({ id: 'mobility',          name: 'Mobility',                    sets: '10 min',           rest: '—',       category: 'mobility',      notes: 'Hips, shoulders, wrists, thoracic spine.',                                     muscles: ['hips', 'shoulders', 'wrists'],                 timer: { sec: 0 } }),
+  ex({ id: 'light_core',        name: 'Light core',                  sets: '5 min',            rest: '—',       category: 'body_tension',  notes: 'Easy dead bugs and bird dogs; nothing fatiguing.',                            muscles: ['core', 'abs'],                                 timer: { sec: 0 } }),
 ];
 
-const volumeExercises = (deload = false) => [
-  ex({
-    id: 'warmup',
-    name: 'Thorough warm-up',
-    sets: '25 min',
-    rest: '—',
-    category: 'finger_prehab',
-    notes: 'Same warm-up as limit days — never rushed.',
-    progression: 'Open-hand only until fully warm.',
-    description: 'Same as limit days. Wrist mobility, tendon glides, easy climbing on the Kilter open-hand. Volume sessions hit fingers hard — give them every chance to be ready.',
-    muscles: ['fingers', 'wrists', 'forearms', 'shoulders'],
-    timer: { sec: 0 },
-  }),
-  ex({
-    id: '4x4',
-    name: '4x4 circuits',
-    sets: deload ? '2 rounds · V4' : '4 rounds · V4–V5',
-    rest: '3–4 min between rounds',
-    category: 'muscular_endurance',
-    notes: deload
-      ? '4 problems back-to-back, repeat 2 rounds (40% cut).'
-      : '4 problems back-to-back, repeat 4 rounds. On Tension Board, lap 1–2 problems to the same effect.',
-    progression: 'Heart rate up. Form holds together to the last problem.',
-    description: 'Pick 4 problems at V4–V5. Climb all four back-to-back with minimal rest between problems. Rest 3–4 min between rounds. Repeat for 4 rounds. The last problem of the last round should feel like a true effort but be completable.',
-    muscles: ['fingers', 'forearms', 'lats', 'biceps', 'core', 'shoulders'],
-    timer: { sec: 210, mode: 'rest', label: 'Rest between rounds' },
-  }),
-  ex({
-    id: 'project',
-    name: 'Project burns',
-    sets: deload ? 'Skip on deload' : '3–5 attempts',
-    rest: '3 min',
-    category: 'max_strength',
-    notes: deload ? 'Optional — only if feeling fresh.' : 'One notch below your absolute limit today.',
-    progression: 'Quality over quantity.',
-    description: 'After the pump from 4x4s, do 3–5 quality attempts on a single problem one notch below today\'s absolute limit. Focus on the crux move. Rest 3 min between attempts.',
-    muscles: ['fingers', 'forearms', 'lats', 'core', 'shoulders'],
-    timer: { sec: 180, mode: 'rest', label: 'Rest between attempts' },
-  }),
-  ex({
-    id: 'core',
-    name: 'Core & cool-down',
-    sets: 'Hollow body 3x30s · Dead bugs 3x10',
-    rest: '60 sec',
-    category: 'body_tension',
-    notes: 'Stretch and cool down.',
-    progression: 'Hollow body → with rocks → with weight plate.',
-    description: 'Hollow body holds 3×30s with 60s rest. Dead bugs 3×10/side. Finish with light stretching for fingers, hips, and shoulders.',
-    muscles: ['core', 'abs', 'hip flexors'],
-    timer: { sec: 30, mode: 'work', label: 'Hold' },
-  }),
-];
+// ----- Testing exercises (Week 16) ------------------------------------------
+// Each test session in week 16 lists which assessments to run that day. The
+// detailed protocol lives in ASSESSMENTS below and is captured in the
+// dedicated Assessments view.
+const testingExercises = (testDay) => {
+  if (testDay === 'wed') return [
+    ex({ id: 'test_1', name: 'Test 1 — Max-Weight Dead Hang (20 mm)', sets: '—', rest: '10 min', category: 'max_strength', notes: 'Full protocol in Assessments tab. Log result there.', muscles: ['fingers', 'forearms'], timer: { sec: 0 } }),
+    ex({ id: 'test_2', name: 'Test 2 — Max Dead-Hang Pull-Ups',       sets: '—', rest: '8 min',  category: 'max_strength', notes: 'Full protocol in Assessments tab.',                  muscles: ['lats', 'biceps'],     timer: { sec: 0 } }),
+    ex({ id: 'test_3', name: 'Test 3 — 90° Lock-Off (dominant arm)',  sets: '—', rest: '5 min',  category: 'max_strength', notes: 'Best of 2 attempts.',                                 muscles: ['biceps', 'lats'],     timer: { sec: 0 } }),
+  ];
+  if (testDay === 'thu') return [
+    ex({ id: 'test_4', name: 'Test 4 — L-Sit Hold',                   sets: '—', rest: '20 min', category: 'body_tension', notes: 'Note bent-knee vs straight-leg.',                     muscles: ['core', 'abs'],        timer: { sec: 0 } }),
+    ex({ id: 'test_5', name: 'Test 5 — 7-3 Repeater Reps to Failure', sets: '—', rest: '12 min', category: 'muscular_endurance', notes: '20 mm, BW only, open hand.',                muscles: ['fingers', 'forearms'],timer: { sec: 0 } }),
+  ];
+  if (testDay === 'fri') return [
+    ex({ id: 'test_6', name: 'Test 6 — Bouldering Pyramid',           sets: '—', rest: '—',      category: 'technique',    notes: 'Dedicated fresh session. Record max flash and redpoint.', muscles: ['fingers', 'forearms', 'lats', 'core'], timer: { sec: 0 } }),
+  ];
+  if (testDay === 'sat') return [
+    ex({ id: 'test_7',  name: 'Test 7 — 4×4 Anaerobic Capacity',      sets: '—', rest: '—',      category: 'muscular_endurance', notes: '4 problems at flash − 3 grades; 4 rounds.',         muscles: ['fingers', 'forearms', 'lats'], timer: { sec: 0 } }),
+    ex({ id: 'test_8',  name: 'Test 8 — Campus Rung Contact',         sets: '—', rest: '5 min',  category: 'power',        notes: '1-3, 1-4, 1-5 from rung 1; 3 attempts per target.',   muscles: ['fingers', 'forearms', 'lats'], timer: { sec: 0 } }),
+    ex({ id: 'test_9',  name: 'Test 9 — Frog Hip Mobility',           sets: '—', rest: '—',      category: 'mobility',     notes: 'Angle between thigh and torso at max comfortable range.', muscles: ['hips', 'adductors'],    timer: { sec: 0 } }),
+    ex({ id: 'test_10', name: 'Test 10 — ARC Aerobic Base',           sets: '—', rest: '—',      category: 'muscular_endurance', notes: 'Maintain pump 3/10 for 20 min continuous traversing.', muscles: ['forearms', 'lats'],    timer: { sec: 0 } }),
+  ];
+  return [];
+};
 
-const techExercises = (deload = false) => [
-  ex({
-    id: 'warmup',
-    name: 'Finger warm-up',
-    sets: '15 min',
-    rest: '—',
-    category: 'finger_prehab',
-    notes: 'Thorough — slightly shorter than limit days but still essential.',
-    progression: 'Open-hand only until fully warm.',
-    description: 'Standard warm-up — wrist mobility, tendon glides, easy climbing. Slightly shorter than limit days because the day\'s effort is lower, but still thorough.',
-    muscles: ['fingers', 'wrists', 'forearms'],
-    timer: { sec: 0 },
-  }),
-  ex({
-    id: 'intentional',
-    name: 'Intentional movement',
-    sets: deload ? '30 min · 2 grades below limit' : '45 min · 1–2 grades below limit',
-    rest: 'Generous',
-    category: 'technique',
-    notes: 'Silent feet, deliberate hip positioning, read sequence before leaving the ground.',
-    progression: 'Every rep counts. No mindless lapping.',
-    description: 'Pick problems 1–2 grades below your limit and execute them with maximum technical precision. Silent feet, deliberate weight transfers, deliberate hip positioning. Read every sequence from the ground before committing. This is the most important session for grade transfer.',
-    muscles: ['fingers', 'forearms', 'lats', 'core', 'glutes', 'hip flexors'],
-    timer: { sec: 180, mode: 'rest', label: 'Rest between problems' },
-  }),
-  ex({
-    id: 'flow',
-    name: 'Flow laps',
-    sets: '10 min',
-    rest: 'Minimal',
-    category: 'technique',
-    notes: 'Comfortable-but-not-easy problems. Stay in flow state.',
-    progression: 'Builds movement endurance and reinforces good patterns.',
-    description: 'String together 2–3 comfortable-but-not-easy problems with minimal rest. Stay in flow state — quick reads, fluid movement. Builds movement endurance and reinforces the good patterns from the intentional block.',
-    muscles: ['fingers', 'forearms', 'lats', 'core'],
-    timer: { sec: 600, mode: 'work', label: 'Flow block' },
-  }),
-  ex({
-    id: 'reflect',
-    name: 'Cool-down & reflect',
-    sets: '5 min',
-    rest: '—',
-    category: 'mobility',
-    notes: 'Note 1–2 movement lessons from the session.',
-    progression: 'Five minutes of reflection is worth 30 of mindless lapping.',
-    description: 'Light stretching for forearms and hips. Most importantly: write down 1–2 specific movement lessons from today. The reflection is what locks the learning in.',
-    muscles: ['mind', 'forearms', 'hips'],
-    timer: { sec: 0 },
-  }),
-];
-
-const ringsExercises = () => [
-  ex({
-    id: 'rows',
-    name: 'Rows',
-    sets: '3 × 8–12',
-    rest: '90 sec',
-    category: 'base_strength',
-    notes: 'Feet on floor to start.',
-    progression: 'Feet elevated → 2 sec pause at chest → supinated grip → archer rows → weighted vest.',
-    description: 'Set rings at roughly hip height. Walk feet under so body forms a straight line from heels to head. Pull chest to rings, keeping shoulder blades pulled down and back. Lower slowly with control.',
-    muscles: ['lats', 'rhomboids', 'biceps', 'rear delts', 'core'],
-    timer: { sec: 90, mode: 'rest', label: 'Rest between sets' },
-  }),
-  ex({
-    id: 'pushups',
-    name: 'Push-ups / RTO',
-    sets: '3 × 8–12',
-    rest: '90 sec',
-    category: 'base_strength',
-    notes: 'Maintain neutral shoulder.',
-    progression: 'Standard → feet elevated → RTO at bottom → RTO throughout → archer push-ups.',
-    description: 'Ring push-up: lower chest to rings, push back up. For RTO (rings turned out), rotate the rings outward so palms face forward at the bottom — this loads the biceps tendon, an important stimulus for climbers. Body straight throughout.',
-    muscles: ['chest', 'triceps', 'shoulders', 'biceps tendon', 'core'],
-    timer: { sec: 90, mode: 'rest', label: 'Rest between sets' },
-  }),
-  ex({
-    id: 'dips',
-    name: 'Ring dips',
-    sets: '3 × 6–10',
-    rest: '2 min',
-    category: 'base_strength',
-    notes: 'Quality reps over quantity.',
-    progression: 'Feet assisted → partial ROM unassisted → full ROM → pause at bottom → weighted.',
-    description: 'Support on rings, body slightly forward. Lower until shoulder is below elbow (or wherever you have control). Press up actively. Ring dips demand massive shoulder stability — go slow.',
-    muscles: ['triceps', 'chest', 'shoulders', 'core'],
-    timer: { sec: 120, mode: 'rest', label: 'Rest between sets' },
-  }),
-  ex({
-    id: 'facepulls',
-    name: 'Ring face pulls',
-    sets: '3 × 12–15',
-    rest: '60 sec',
-    category: 'base_strength',
-    notes: 'Rings at face height, upright body.',
-    progression: 'Lean further back for more load → pause at face → single arm.',
-    description: 'Rings at face height. Walk feet forward so body angles back. Pull rings to forehead with elbows high and wide. Externally rotate hands at the top. Critical for posterior shoulder health, especially when climbing volume goes up.',
-    muscles: ['rear delts', 'rhomboids', 'rotator cuff', 'biceps'],
-    timer: { sec: 60, mode: 'rest', label: 'Rest between sets' },
-  }),
-  ex({
-    id: 'lsit',
-    name: 'L-sit progressions',
-    sets: '3 × 10–20 sec',
-    rest: '60 sec',
-    category: 'body_tension',
-    notes: 'Active shoulders, ribs down.',
-    progression: 'Tuck → one leg extended → full L-sit → hold with shoulder depression.',
-    description: 'Hands by hips on rings or floor. Press down to lift body. Tuck legs (easy), extend one (medium), or hold full L (hard). Actively depress shoulders. Builds core, hip flexor strength, and shoulder stability — directly transfers to body tension on the wall.',
-    muscles: ['core', 'abs', 'hip flexors', 'quads', 'lats'],
-    timer: { sec: 15, mode: 'work', label: 'Hold' },
-  }),
-];
-
-const weightsExercises = () => [
-  ex({
-    id: 'kb_swings',
-    name: 'KB swings',
-    sets: '3 × 15–20',
-    rest: '90 sec',
-    category: 'power',
-    notes: 'Hip-driven, not arm-driven.',
-    progression: 'Two-hand → single-arm → KB clean → KB snatch. Increase weight when 20 reps feel easy.',
-    description: 'Hinge at the hips (not a squat). Swing the bell back between legs, then snap hips forward to lift the bell to chest height. Arms are just a rope. The bell floats. Glutes and hamstrings do the work — this teaches the hip extension power used on heel hooks and dynamic moves.',
-    muscles: ['glutes', 'hamstrings', 'lower back', 'core', 'shoulders'],
-    timer: { sec: 90, mode: 'rest', label: 'Rest between sets' },
-  }),
-  ex({
-    id: 'tgu',
-    name: 'Turkish get-ups',
-    sets: '3 × 3–5 per side',
-    rest: '2 min',
-    category: 'body_tension',
-    notes: 'Eyes on the bell. Slow and controlled.',
-    progression: 'Bodyweight first → light KB → heavier KB. Never rush — quality only.',
-    description: 'Lie on back, KB pressed overhead in one hand. Move to standing in 7–8 deliberate steps while keeping the bell vertical the entire time. Reverse the steps to lie down. Eyes on the bell. Whole-body coordination and stability drill — climbing in disguise.',
-    muscles: ['shoulders', 'core', 'obliques', 'glutes', 'quads', 'hip flexors'],
-    timer: { sec: 120, mode: 'rest', label: 'Rest between sides' },
-  }),
-  ex({
-    id: 'wrist_curls',
-    name: 'Reverse wrist curls',
-    sets: '3 × 15–20',
-    rest: '60 sec',
-    category: 'finger_prehab',
-    notes: 'Light weight. Slow tempo.',
-    progression: 'Light DB → heavier DB → add rubber band finger extensions as a superset.',
-    description: 'Hold light DB with palm facing down, forearm resting on bench. Slowly curl wrist up toward you, lower with control. Strengthens forearm extensors — counterbalance to all the flexor work climbing gives you.',
-    muscles: ['forearm extensors', 'wrists'],
-    timer: { sec: 60, mode: 'rest', label: 'Rest between sets' },
-  }),
-  ex({
-    id: 'lat_raises',
-    name: 'Lateral raises [superset]',
-    sets: '3 × 12–15',
-    rest: 'Straight into face pulls',
-    category: 'base_strength',
-    notes: 'Strict — no hip swing.',
-    progression: 'Light DB strict → heavier → 2 sec hold at top → cable raise if available.',
-    description: 'Hold light DBs at sides. Raise straight out to shoulder height (no higher). Pause briefly, lower with control. Strict — no hip swing or shrug. Targets the side delts that get neglected in climbing.',
-    muscles: ['side delts', 'shoulders'],
-    timer: { sec: 0, mode: 'rest', label: 'No rest — into face pulls' },
-  }),
-  ex({
-    id: 'face_pulls',
-    name: 'Face pulls [superset]',
-    sets: '3 × 15–20',
-    rest: '60 sec after pair',
-    category: 'base_strength',
-    notes: 'Elbows high. Pull to forehead.',
-    progression: 'Light band → heavier band → DB rear delt fly.',
-    description: 'Band anchored at face height. Pull rope/band to forehead, elbows high and wide. Externally rotate at the top so thumbs point back. Most important shoulder health movement for climbers.',
-    muscles: ['rear delts', 'rotator cuff', 'rhomboids'],
-    timer: { sec: 60, mode: 'rest', label: 'Rest after pair' },
-  }),
-  ex({
-    id: 'hollow',
-    name: 'Hollow body holds [superset]',
-    sets: '3 × 20–30 sec',
-    rest: 'Straight into dead bugs',
-    category: 'body_tension',
-    notes: 'Low back pressed to floor. Ribs down.',
-    progression: 'Tuck → one leg → full hollow → rocks → add weight plate.',
-    description: 'Lie on back. Press low back hard into the floor. Lift head and shoulders, arms overhead, legs straight. Body forms a slight banana curve. Ribs pulled down — no flaring. The shape that holds you to a steep wall.',
-    muscles: ['core', 'abs', 'hip flexors', 'quads'],
-    timer: { sec: 30, mode: 'work', label: 'Hold' },
-  }),
-  ex({
-    id: 'deadbugs',
-    name: 'Dead bugs [superset]',
-    sets: '3 × 8–10 per side',
-    rest: '60 sec after pair',
-    category: 'body_tension',
-    notes: 'Opposite arm/leg. Slow.',
-    progression: 'Standard → 2 sec pause at extension → 5 sec tempo → light DB in hands.',
-    description: 'Lie on back, knees bent at 90° in air, arms straight up. Slowly lower opposite arm and leg until inches from the floor. Hold one beat. Return. Switch sides. Low back must stay glued to the floor — that\'s the whole point.',
-    muscles: ['core', 'abs', 'hip flexors'],
-    timer: { sec: 60, mode: 'rest', label: 'Rest after pair' },
-  }),
-  ex({
-    id: 'copenhagen',
-    name: 'Copenhagen planks',
-    sets: '3 × 20–30 sec per side',
-    rest: '90 sec',
-    category: 'body_tension',
-    notes: 'Hip square to floor.',
-    progression: 'Bottom leg on bench (easier) → top leg only → add hip dip → extend hold.',
-    description: 'Side plank with the top leg resting on a bench (or top leg only for hard mode). Hip square to the floor. Hits the adductors — protective for the inside of the knee on heel hooks and drop-knee positions.',
-    muscles: ['adductors', 'obliques', 'core', 'glutes'],
-    timer: { sec: 30, mode: 'work', label: 'Hold' },
-  }),
-];
-
-const peExercises = (phase) => [
-  ex({
-    id: 'warmup',
-    name: 'Thorough warm-up',
-    sets: '20 min',
-    rest: '—',
-    category: 'finger_prehab',
-    notes: 'Never rush warm-up — power endurance is hard on tendons.',
-    progression: 'Open-hand only until fully warm.',
-    description: 'Wrist mobility, tendon glides, easy climbing. PE sessions are tendon-stressful — give the warm-up its full time.',
-    muscles: ['fingers', 'wrists', 'forearms', 'shoulders'],
-    timer: { sec: 0 },
-  }),
-  ex({
-    id: '4x4',
-    name: '4x4 power circuits',
-    sets: '4 rounds · V5–V6',
-    rest: '3 min between rounds',
-    category: 'muscular_endurance',
-    notes: '4 problems back-to-back at moderate-to-hard. Pump should build by round 3.',
-    progression: 'Bump grade one notch when all 4 rounds finish clean.',
-    description: 'Pick 4 problems harder than your usual 4x4 set — V5–V6. Climb all 4 back-to-back. Rest 3 min. Repeat for 4 rounds. The pump should be real by round 3. Trains the body to keep performing while pumped — the climbing-specific energy system for outdoor sends.',
-    muscles: ['fingers', 'forearms', 'lats', 'biceps', 'core', 'shoulders'],
-    timer: { sec: 180, mode: 'rest', label: 'Rest between rounds' },
-  }),
-  ex({
-    id: 'power_burns',
-    name: 'Power burns',
-    sets: '4–5 attempts',
-    rest: '3–4 min',
-    category: 'power',
-    notes: `Short, explosive problems at ${phase.limitGrade}. Dynamic moves, big throws.`,
-    progression: 'Commit fully — no half-attempts.',
-    description: `Pick a short, explosive problem with dynamic moves at ${phase.limitGrade}. 4–5 attempts with full rest. Commit fully — half-attempts teach you to bail.`,
-    muscles: ['fingers', 'forearms', 'lats', 'core', 'glutes', 'shoulders'],
-    timer: { sec: 210, mode: 'rest', label: 'Rest between burns' },
-  }),
-  ex({
-    id: 'cooldown',
-    name: 'Prehab cool-down',
-    sets: '10 min',
-    rest: '—',
-    category: 'mobility',
-    notes: 'Bands, wrist rotations, shoulder openers.',
-    progression: 'Contrast soak if anything feels inflamed.',
-    description: 'Rubber band finger extensions, wrist rotations, shoulder dislocates. PE work loads fingers and elbows — give them recovery attention.',
-    muscles: ['fingers', 'wrists', 'shoulders', 'elbows'],
-    timer: { sec: 0 },
-  }),
-];
-
+// ----- Rest day -------------------------------------------------------------
 const restExercises = () => [
   ex({
     id: 'rest_note',
@@ -461,28 +304,33 @@ const restExercises = () => [
     rest: '—',
     category: 'mobility',
     notes: 'Walking, light mobility, gentle stretching.',
-    progression: 'Keeps blood circulating without loading tendons. Tendons adapt slower than muscles — earn your gains here.',
-    description: 'A 20–30 min walk. Light mobility for hips and shoulders. Light stretching. Sleep early, hit your protein target (1.6–2 g/kg), and take 15 g collagen + 50 mg vit C 30–60 min before any next climbing day.',
+    progression: 'Tendons adapt slower than muscles — earn your gains here.',
+    description: 'A 20–30 min walk. Light mobility for hips and shoulders. Light stretching. Sleep early, hit your protein target (1.8–2.2 g/kg), and warm up thoroughly before any next climbing day.',
     muscles: ['recovery'],
-    timer: { sec: 1800, mode: 'work', label: 'Walk' },
+    timer: { sec: 0 },
   }),
 ];
 
+// ----------------------------------------------------------------------------
+// Build a session for a given type + week context.
+// ----------------------------------------------------------------------------
 function buildSession(type, phase, opts = {}) {
-  const { deload = false } = opts;
+  const { deload = false, testDay = null } = opts;
   switch (type) {
     case 'limit':
-      return { id: 'limit', name: deload ? 'Limit (deload)' : 'Limit Bouldering', short: 'Limit', duration: deload ? '90 min' : '2 hrs', plannedMinutes: deload ? 90 : 120, location: 'Tension Board 2 + Kilter', accent: '#C2A878', exercises: limitExercises(phase, deload) };
+      return { id: 'limit', name: deload ? 'Limit (deload)' : 'Limit Bouldering', short: 'Limit', duration: deload ? '90 min' : '~2 hrs', plannedMinutes: deload ? 90 : 120, location: 'Wall', accent: '#C2A878', exercises: limitExercises(phase, deload) };
     case 'volume':
-      return { id: 'volume', name: deload ? 'Volume (deload)' : 'Volume / Endurance', short: 'Volume', duration: deload ? '75 min' : '2 hrs', plannedMinutes: deload ? 75 : 120, location: 'Tension Board 2 (primary)', accent: '#7A9E5F', exercises: volumeExercises(deload) };
+      return { id: 'volume', name: deload ? 'Volume (deload)' : 'Volume / Endurance', short: 'Volume', duration: deload ? '60 min' : '~90 min', plannedMinutes: deload ? 60 : 90, location: 'Wall', accent: '#7A9E5F', exercises: volumeExercises(phase, deload) };
     case 'tech':
-      return { id: 'tech', name: 'Technique / Moderate', short: 'Technique', duration: '75 min', plannedMinutes: 75, location: 'Friday · Kilter (primary)', accent: '#A8957A', exercises: techExercises(deload) };
-    case 'rings':
-      return { id: 'rings', name: 'Gymnastics Rings', short: 'Rings', duration: '~60 min', plannedMinutes: 60, location: 'Home', accent: '#94A3B8', exercises: ringsExercises() };
-    case 'weights':
-      return { id: 'weights', name: 'Weights & Core', short: 'Weights', duration: '~60 min', plannedMinutes: 60, location: 'Home', accent: '#B88A6F', exercises: weightsExercises() };
-    case 'pe':
-      return { id: 'pe', name: 'Power Endurance', short: 'Power End.', duration: '90 min', plannedMinutes: 90, location: 'Tension Board 2 + Kilter', accent: '#D97757', exercises: peExercises(phase) };
+      return { id: 'tech', name: 'Technique', short: 'Technique', duration: '~75 min', plannedMinutes: 75, location: 'Wall', accent: '#A8957A', exercises: techExercises(phase, deload) };
+    case 'homeA':
+      return { id: 'homeA', name: 'Home Gym A', short: 'Home A', duration: '~60 min', plannedMinutes: 60, location: 'Home', accent: '#94A3B8', exercises: homeAExercises(phase, deload) };
+    case 'homeB':
+      return { id: 'homeB', name: 'Home Gym B', short: 'Home B', duration: '~60 min', plannedMinutes: 60, location: 'Home', accent: '#94A3B8', exercises: homeBExercises(phase, deload) };
+    case 'lightHome':
+      return { id: 'lightHome', name: 'Light Home (deload)', short: 'Light', duration: '~30 min', plannedMinutes: 30, location: 'Home', accent: '#6E94A8', exercises: lightHomeExercises() };
+    case 'testing':
+      return { id: 'testing', name: 'Testing', short: 'Test', duration: 'Varies', plannedMinutes: 60, location: 'Wall / Home', accent: '#D97757', exercises: testingExercises(testDay) };
     case 'rest':
     default:
       return { id: 'rest', name: 'Rest', short: 'Rest', duration: 'Full day off', plannedMinutes: 0, location: 'Active recovery only', accent: '#444', exercises: restExercises() };
@@ -490,55 +338,72 @@ function buildSession(type, phase, opts = {}) {
 }
 
 // ----------------------------------------------------------------------------
-// Default weekly pattern (per cadence)
-// Returns array of 7 session-type ids (Mon → Sun).
+// Default weekly pattern (per cadence).
+// Cadence values: '3day' (3-climb default) or '2day' (2-climb busy week).
+// Week 15 (deep deload) and Week 16 (testing) use fixed patterns regardless
+// of cadence. Week 4/8/12 follow the same pattern as a normal week of their
+// cadence, but the `deload` flag flows through to session content.
 // ----------------------------------------------------------------------------
 export function getDefaultPattern(weekNumber, cadence = '3day') {
-  const phase = getPhase(weekNumber);
-  const isDeload = phase.deloadWeek === weekNumber;
-  const isTaper = phase.taperWeeks?.includes(weekNumber);
-  const isPhase3PE = weekNumber === 13 || weekNumber === 14;
-
-  if (isTaper) return ['limit', 'rings', 'rest', 'rest', 'tech', 'rest', 'rest'];
-  if (isDeload) return ['limit', 'rings', 'rest', 'weights', 'tech', 'rest', 'rest'];
-  if (cadence === '2day') return ['limit', 'rings', 'rest', 'weights', 'tech', 'rest', 'rest'];
-  const wed = isPhase3PE ? 'pe' : 'volume';
-  return ['limit', 'rings', wed, 'weights', 'tech', 'rest', 'rest'];
+  if (weekNumber === 15) {
+    // Deep deload — 2 easy climbing sessions (Mon + Fri) + 1 light home (Tue).
+    return ['volume', 'lightHome', 'rest', 'rest', 'volume', 'rest', 'rest'];
+  }
+  if (weekNumber === 16) {
+    // Testing week — Mon/Tue rest, Wed–Sat testing, Sun rest.
+    return ['rest', 'rest', 'testing', 'testing', 'testing', 'testing', 'rest'];
+  }
+  if (cadence === '2day') {
+    // 2-climb busy week: Mon Limit · Tue HomeA · Wed Rest · Thu Volume · Fri HomeB · Sat Rest · Sun Rest
+    return ['limit', 'homeA', 'rest', 'volume', 'homeB', 'rest', 'rest'];
+  }
+  // 3-climb default: Mon Limit · Tue HomeA · Wed Volume · Thu Rest · Fri Tech · Sat HomeB · Sun Rest
+  return ['limit', 'homeA', 'volume', 'rest', 'tech', 'homeB', 'rest'];
 }
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+// Week 16 maps Wed/Thu/Fri/Sat day indices to specific test days.
+const TESTING_DAY_KEYS = { 2: 'wed', 3: 'thu', 4: 'fri', 5: 'sat' };
+
 // ----------------------------------------------------------------------------
 // Build full week schedule.
-// `pattern` may be supplied (overrides default).
 // ----------------------------------------------------------------------------
 export function getWeekSchedule(weekNumber, cadence = '3day', pattern = null) {
   const phase = getPhase(weekNumber);
   const isDeload = phase.deloadWeek === weekNumber;
-  const isTaper = phase.taperWeeks?.includes(weekNumber);
+  const isDeepDeload = phase.deepDeloadWeek === weekNumber;
+  const isTesting = phase.testingWeek === weekNumber;
   const usePattern = pattern || getDefaultPattern(weekNumber, cadence);
 
-  return usePattern.map((type, i) => ({
-    dayLabel: DAY_LABELS[i],
-    dayIndex: i,
-    weekNumber,
-    sessionType: type,
-    session: buildSession(type, phase, { deload: isDeload }),
-    isDeload,
-    isTaper,
-  }));
+  return usePattern.map((type, i) => {
+    const opts = { deload: isDeload };
+    if (isTesting && type === 'testing') opts.testDay = TESTING_DAY_KEYS[i] || null;
+    return {
+      dayLabel: DAY_LABELS[i],
+      dayIndex: i,
+      weekNumber,
+      sessionType: type,
+      session: buildSession(type, phase, opts),
+      isDeload,
+      isDeepDeload,
+      isTesting,
+    };
+  });
 }
 
 export function getWeekMeta(weekNumber) {
   const phase = getPhase(weekNumber);
   const isDeload = phase.deloadWeek === weekNumber;
-  const isTaper = phase.taperWeeks?.includes(weekNumber);
+  const isDeepDeload = phase.deepDeloadWeek === weekNumber;
+  const isTesting = phase.testingWeek === weekNumber;
   const startDate = addDays(PLAN_START_DATE, (weekNumber - 1) * 7);
   const endDate = addDays(startDate, 6);
   let tag = null;
-  if (isDeload) tag = 'Deload';
-  else if (isTaper) tag = 'Taper';
-  return { weekNumber, phase, isDeload, isTaper, tag, startDate, endDate };
+  if (isTesting) tag = 'Testing';
+  else if (isDeepDeload) tag = 'Deload';
+  else if (isDeload) tag = 'Deload';
+  return { weekNumber, phase, isDeload, isDeepDeload, isTesting, tag, startDate, endDate };
 }
 
 // ----------------------------------------------------------------------------
@@ -573,49 +438,56 @@ export function formatDateLong(isoDate) {
 
 // ----------------------------------------------------------------------------
 // Plan iteration helpers
-// `cadenceFor(w)` and `patternFor(w)` callbacks let the caller plug in their
-// per-week overrides from app state.
 // ----------------------------------------------------------------------------
 export function getAllSessions(cadenceFor = () => '3day', patternFor = () => null) {
   const out = [];
   for (let w = 1; w <= 16; w++) {
     const week = getWeekSchedule(w, cadenceFor(w), patternFor(w));
     week.forEach((d, i) => {
-      out.push({ weekNumber: w, dayIndex: i, sessionType: d.sessionType, session: d.session, isDeload: d.isDeload, isTaper: d.isTaper });
+      out.push({ weekNumber: w, dayIndex: i, sessionType: d.sessionType, session: d.session, isDeload: d.isDeload, isDeepDeload: d.isDeepDeload, isTesting: d.isTesting });
     });
   }
   return out;
 }
 
 // ----------------------------------------------------------------------------
-// Build the exercise catalog (for muscle search). Each catalog entry is unique
-// per session-type + exercise id. Same exercise across phases is deduped.
+// Build the exercise catalog (for search). Each catalog entry is unique per
+// session-type + phase + exercise id.
 // ----------------------------------------------------------------------------
 export function buildExerciseCatalog() {
   const seen = new Set();
   const catalog = [];
-  const allTypes = ['limit', 'volume', 'tech', 'rings', 'weights', 'pe'];
-  // Use phase 2 for limit-specific intensity placeholder; we just want the structure.
-  const phase = PHASES[1];
-  allTypes.forEach(t => {
-    const s = buildSession(t, phase, { deload: false });
-    s.exercises.forEach(e => {
-      const key = `${t}:${e.id}`;
-      if (seen.has(key)) return;
-      seen.add(key);
-      catalog.push({
-        sessionType: t,
-        sessionName: s.name,
-        sessionAccent: s.accent,
-        id: e.id,
-        name: e.name,
-        category: e.category,
-        description: e.description,
-        muscles: e.muscles || [],
-        progression: e.progression,
-        sets: e.sets,
-        rest: e.rest,
-        timer: e.timer,
+  const sessionTypes = ['limit', 'volume', 'tech', 'homeA', 'homeB', 'lightHome', 'testing'];
+  PHASES.forEach(phase => {
+    sessionTypes.forEach(t => {
+      // For testing sessions, pull from all 4 days. Phase 4 only.
+      if (t === 'testing' && phase.id !== 4) return;
+      const builds = t === 'testing'
+        ? ['wed', 'thu', 'fri', 'sat'].map(td => buildSession(t, phase, { testDay: td }))
+        : [buildSession(t, phase, { deload: false })];
+      builds.forEach(s => {
+        s.exercises.forEach(e => {
+          const key = `${t}:p${phase.id}:${e.id}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          catalog.push({
+            sessionType: t,
+            sessionName: s.name,
+            sessionAccent: s.accent,
+            phaseId: phase.id,
+            phaseName: phase.name,
+            id: e.id,
+            name: e.name,
+            category: e.category,
+            description: e.description,
+            muscles: e.muscles || [],
+            progression: e.progression,
+            sets: e.sets,
+            rest: e.rest,
+            timer: e.timer,
+            notes: e.notes,
+          });
+        });
       });
     });
   });
@@ -629,25 +501,154 @@ export function getAllMuscles() {
 }
 
 // ----------------------------------------------------------------------------
+// Standardised assessments — Week 1 baseline + Week 16 retest.
+// ----------------------------------------------------------------------------
+export const ASSESSMENTS = [
+  {
+    id: 'dead_hang',
+    number: 1,
+    name: 'Max-Weight Dead Hang — 20 mm Edge',
+    equipment: 'Fingerboard, weight belt, scales',
+    protocol: 'Warm fingers thoroughly (10+ min easy hanging). Add weight until failure occurs at 8–12 s, open-hand grip, 20 mm edge. Two attempts max. Rest 10 min before next test.',
+    scoring: 'Total load (BW + added weight, kg) held for 10 s.',
+    why: 'Finger strength per kg BW is the top predictor of climbing performance.',
+    unit: 'kg',
+    day: 'wed',
+  },
+  {
+    id: 'pull_ups',
+    number: 2,
+    name: 'Max Dead-Hang Pull-Ups',
+    equipment: 'Pull-up bar',
+    protocol: 'Dead hang start. Pull chin over bar. No kipping. Count to failure. Rest 8 min.',
+    scoring: 'Total reps in one unbroken set.',
+    why: 'Upper-body pulling strength and endurance foundation.',
+    unit: 'reps',
+    day: 'wed',
+  },
+  {
+    id: 'lock_off',
+    number: 3,
+    name: '90-Degree Lock-Off (Dominant Arm)',
+    equipment: 'Pull-up bar',
+    protocol: 'Pull to 90° elbow flexion, hold max time. Timer stops when elbow breaks 90°. Best of 2 attempts, 5 min rest between.',
+    scoring: 'Duration in seconds.',
+    why: 'Lock-off strength for clipping, reaching, and steep climbing.',
+    unit: 's',
+    day: 'wed',
+  },
+  {
+    id: 'l_sit',
+    number: 4,
+    name: 'L-Sit Hold',
+    equipment: 'Parallel bars, rings, or sturdy chairs',
+    protocol: 'Support BW on straight arms, legs horizontal. Bent knee acceptable — note which. Time to failure.',
+    scoring: 'Duration in seconds (note bent-knee vs. straight-leg).',
+    why: 'Core compression strength for high feet and steep terrain.',
+    unit: 's',
+    day: 'thu',
+  },
+  {
+    id: 'repeaters',
+    number: 5,
+    name: '7-3 Repeater Reps to Failure — 20 mm, Bodyweight',
+    equipment: 'Fingerboard',
+    protocol: '7 s hang / 3 s off = 1 rep. Count reps until you cannot complete a full 7 s hang. Open hand, 20 mm edge, bodyweight only. Rest 12 min.',
+    scoring: 'Total reps to failure.',
+    why: 'Finger strength-endurance across a route or long boulder.',
+    unit: 'reps',
+    day: 'thu',
+  },
+  {
+    id: 'pyramid',
+    number: 6,
+    name: 'Bouldering Pyramid',
+    equipment: 'Bouldering wall',
+    protocol: 'Fresh session: warm up, then climb a full pyramid. Record (a) max flash grade and (b) max redpoint grade within 5 attempts.',
+    scoring: 'Max flash grade / max redpoint grade.',
+    why: 'Direct measure of climbing performance — the ultimate goal.',
+    unit: 'grade',
+    day: 'fri',
+  },
+  {
+    id: '4x4_test',
+    number: 7,
+    name: '4×4 Anaerobic Capacity Test',
+    equipment: 'Bouldering wall, stopwatch',
+    protocol: 'Choose 4 problems at comfortable flash grade (3–4 below max). Climb all 4 back-to-back. Rest 4 min. Repeat 4 rounds. Record completion and HR after round 4.',
+    scoring: 'Rounds completed (of 4) + post-set HR (bpm).',
+    why: 'Anaerobic capacity for crux-heavy sport routes.',
+    unit: 'rounds + bpm',
+    day: 'sat',
+  },
+  {
+    id: 'campus',
+    number: 8,
+    name: 'Campus Rung Contact Strength',
+    equipment: 'Campus board (22 mm rungs, 22 cm spacing)',
+    protocol: 'From rung 1, touch rung 3 with dominant hand (dynamic). Then attempt 1-4, 1-5. 3 attempts per target, 5 min rest between levels.',
+    scoring: 'Highest rung contacted with control from rung 1.',
+    why: 'Explosive contact strength for dynamic moves and big spans.',
+    unit: 'rung',
+    day: 'sat',
+  },
+  {
+    id: 'frog_mobility',
+    number: 9,
+    name: 'Frog Position Hip Mobility',
+    equipment: 'Padded floor',
+    protocol: 'Face down, knees out to 90°, lower hips toward floor. Record angle between thigh and torso at max comfortable range. Note any asymmetry or discomfort.',
+    scoring: 'Angle in degrees at max comfortable range.',
+    why: 'Hip mobility governs high steps, flags, and foot-generated tension on steep walls.',
+    unit: 'degrees',
+    day: 'sat',
+  },
+  {
+    id: 'arc_test',
+    number: 10,
+    name: 'ARC Aerobic Base Test',
+    equipment: 'Bouldering or traversing wall',
+    protocol: 'Maintain pump at 3/10 for 20 continuous minutes of easy traversing. Record whether you stayed at or below 5/10 for the full duration.',
+    scoring: 'Pass/Fail at 20 min; peak pump rating (0–10).',
+    why: 'Aerobic capillary base — allows forearm recovery on rests during routes.',
+    unit: 'pass/fail + 0-10',
+    day: 'sat',
+  },
+];
+
+// ----------------------------------------------------------------------------
 // Notes content (reference)
 // ----------------------------------------------------------------------------
 export const NOTES_CONTENT = [
   {
-    id: 'projecting',
-    heading: 'On Projecting (Phase 2 onwards)',
+    id: 'recovery',
+    heading: 'Recovery Non-Negotiables',
     items: [
-      { title: 'Pick one or two problems', body: 'Per session, pick problems that feel completely out of reach and spend real time on them — not just a couple of tries before moving on.' },
-      { title: 'Deconstruct the crux', body: 'Work it in isolation. Figure out what is actually stopping you: finger strength, body position, footwork, or commitment? This is where grade jumps come from.' },
-      { title: 'Kilter angle', body: 'Start at 20–25° in Phase 1 and do not rush to steeper terrain. Body tension on a 35° board before you are ready just teaches you to flail. Earn steeper angles.' },
+      { title: 'Sleep 8+ hours', body: 'On training days especially. Tendon repair peaks during deep sleep; cutting sleep cuts adaptation.' },
+      { title: 'Protein 1.8–2.2 g/kg/day', body: 'Distribute across 4–5 meals. Do not undereat during a deload week.' },
+      { title: 'Warm up thoroughly', body: 'Before every session, especially before fingerboarding. Cold tendons snap.' },
+      { title: 'A2 pulley pain → stop', body: 'Sharp twinge at the base of ring or middle finger means stop immediately. See a physio within 48 hours.' },
+      { title: 'Wrist extensions daily', body: 'Every training day. Counteracts flexor-dominant climbing and prevents lateral epicondylitis.' },
     ],
   },
   {
-    id: 'boards',
-    heading: 'Board Strategy',
+    id: 'projecting',
+    heading: 'On Projecting (Phase 2 onwards)',
     items: [
-      { title: 'Tension Board 2', body: 'Primary board for limit bouldering and volume. On busy days, lap 1–2 problems for endurance — same stimulus as 4x4s with four problems.' },
-      { title: 'Kilter 8x12', body: 'Body tension and positional problems. The smaller footprint rules out big lateral moves but is excellent for steeper terrain. Start at 20–25°.' },
-      { title: 'Busy gym', body: 'Busy sessions are well-suited to limit bouldering — wait time between turns doubles as built-in rest (3–5 min). Save volume sessions for quieter slots.' },
+      { title: 'Pick one or two problems', body: 'Per session, pick problems that feel completely out of reach and spend real time on them.' },
+      { title: 'Deconstruct the crux', body: 'Work it in isolation. Finger strength, body position, footwork, or commitment — figure out what is actually stopping you.' },
+      { title: 'Earn steeper terrain', body: 'Body tension on steep board angles before you are ready just teaches you to flail. Earn the angle.' },
+    ],
+  },
+  {
+    id: 'life_intervenes',
+    heading: 'When Life Intervenes',
+    items: [
+      { title: 'Only 2 climbing sessions this week', body: 'Use the 2-climb template. Keep both home gym sessions. The Technique session drops — do not try to squeeze it in.' },
+      { title: 'Cannot make it to the wall', body: 'Run both home gym sessions. Add extra pull-up volume. Do not try to make up lost climbing the following week.' },
+      { title: 'Finger tweak or pulley pain', body: 'Drop all fingerboarding immediately. Continue home gym upper-body and easy slab climbing or footwork drills only.' },
+      { title: 'Under-recovered into Phase 3', body: 'Insert an extra deload week between Phase 2 and Phase 3. Repeat the Phase 2 Week 8 protocol.' },
+      { title: 'Sent your project mid-Phase 4', body: 'Pick a new, slightly harder project. Continue the same session structure with the new target.' },
     ],
   },
 ];

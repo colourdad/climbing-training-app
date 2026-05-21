@@ -13,22 +13,31 @@ import {
   formatDateLong,
   NOTES_CONTENT,
   buildExerciseCatalog,
+  ASSESSMENTS,
 } from './data.js';
 
 // ============================================================================
 // localStorage
 // ============================================================================
-const STORAGE_KEY = 'send_climbing_v2';
+const STORAGE_KEY = 'send_climbing_v3';
+const SCHEMA_VERSION = 3;
+const LEGACY_KEYS = ['send_climbing_v2'];
 
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.schemaVersion === SCHEMA_VERSION) return parsed;
+    }
+    // First load on this schema version — clear any legacy keys so old session
+    // IDs (rings/weights/pe) don't linger.
+    LEGACY_KEYS.forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+    return {};
   } catch (e) { return {}; }
 }
 function saveState(s) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch (e) {}
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...s, schemaVersion: SCHEMA_VERSION })); } catch (e) {}
 }
 
 function useStore() {
@@ -40,6 +49,7 @@ function useStore() {
       weekPattern: loaded.weekPattern || {},
       completedExercises: loaded.completedExercises || {},
       sessionLog: loaded.sessionLog || {},
+      assessments: loaded.assessments || {},
     };
   });
 
@@ -116,12 +126,21 @@ function useStore() {
   // ---- global cadence (default) ----
   const setGlobalCadence = (cad) => setState(s => ({ ...s, cadence: cad }));
 
+  // ---- assessments (Week 1 baseline / Week 16 retest) ----
+  // Shape: assessments[testId] = { baseline: string, retest: string, notes: string }
+  const assessmentFor = (id) => state.assessments[id] || { baseline: '', retest: '', notes: '' };
+  const setAssessmentField = (id, field, value) => setState(s => {
+    const prev = s.assessments[id] || { baseline: '', retest: '', notes: '' };
+    return { ...s, assessments: { ...s.assessments, [id]: { ...prev, [field]: value } } };
+  });
+
   const resetAll = () => setState({
     cadence: state.cadence,
     weekCadence: {},
     weekPattern: {},
     completedExercises: {},
     sessionLog: {},
+    assessments: {},
   });
 
   return {
@@ -139,6 +158,8 @@ function useStore() {
     setWeekPattern,
     resetWeek,
     setGlobalCadence,
+    assessmentFor,
+    setAssessmentField,
     resetAll,
   };
 }
@@ -193,6 +214,7 @@ const Icon = {
   Reset: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 3v6h6" /></svg>,
   Search: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="11" cy="11" r="7" /><path d="M21 21l-5-5" /></svg>,
   Dash: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" {...p}><path d="M6 12h12" /></svg>,
+  Target: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.6" fill="currentColor" /></svg>,
 };
 
 // ============================================================================
@@ -679,8 +701,8 @@ function EditWeekModal({ weekNumber, store, onClose }) {
             </div>
           </div>
           <div className="segmented">
-            <button className={localCadence === '3day' ? 'on' : ''} onClick={() => applyCadence('3day')}>3 days</button>
-            <button className={localCadence === '2day' ? 'on' : ''} onClick={() => applyCadence('2day')}>2 days</button>
+            <button className={localCadence === '3day' ? 'on' : ''} onClick={() => applyCadence('3day')}>3 climbs</button>
+            <button className={localCadence === '2day' ? 'on' : ''} onClick={() => applyCadence('2day')}>2 climbs</button>
           </div>
         </div>
 
@@ -1320,6 +1342,112 @@ function NotesView({ store, openSettings }) {
 }
 
 // ============================================================================
+// Assessments view — 10 standardised tests, Week 1 baseline + Week 16 retest.
+// ============================================================================
+function AssessmentsView({ store, openSettings }) {
+  const [expanded, setExpanded] = useState(null);
+  const filled = ASSESSMENTS.filter(a => {
+    const v = store.assessmentFor(a.id);
+    return v.baseline || v.retest;
+  }).length;
+
+  return (
+    <div className="view">
+      <div className="top">
+        <div>
+          <div className="top-sub">Baseline · Retest</div>
+          <h1>Assessments</h1>
+        </div>
+        <button className="cog" onClick={openSettings} aria-label="Settings">
+          <Icon.Cog style={{ width: 18, height: 18 }} />
+        </button>
+      </div>
+
+      <div className="card" style={{ marginBottom: 14 }}>
+        <div className="tiny muted" style={{ marginBottom: 6 }}>
+          Run all 10 tests in <strong>Week 1</strong> before training, and again in <strong>Week 16</strong> after two full rest days. Same order each time.
+        </div>
+        <div className="tiny muted">
+          {filled}/{ASSESSMENTS.length} recorded
+        </div>
+      </div>
+
+      <div className="assessment-list">
+        {ASSESSMENTS.map(a => {
+          const v = store.assessmentFor(a.id);
+          const isOpen = expanded === a.id;
+          return (
+            <div key={a.id} className="card assessment-card" style={{ marginBottom: 10 }}>
+              <button
+                className="assessment-head"
+                onClick={() => setExpanded(isOpen ? null : a.id)}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 0, padding: 0, textAlign: 'left', cursor: 'pointer', color: 'inherit' }}
+              >
+                <div className="assessment-num" style={{ minWidth: 28, height: 28, borderRadius: '50%', background: 'var(--bg-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12 }}>
+                  {a.number}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{a.name}</div>
+                  <div className="tiny muted" style={{ marginTop: 2 }}>{a.why}</div>
+                </div>
+                <Icon.ChevronDown style={{ width: 16, height: 16, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 150ms ease' }} />
+              </button>
+
+              {isOpen && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+                  <div className="tiny" style={{ marginBottom: 8 }}>
+                    <strong>Equipment:</strong> <span className="muted">{a.equipment}</span>
+                  </div>
+                  <div className="tiny" style={{ marginBottom: 8 }}>
+                    <strong>Protocol:</strong> <span className="muted">{a.protocol}</span>
+                  </div>
+                  <div className="tiny" style={{ marginBottom: 12 }}>
+                    <strong>Scoring:</strong> <span className="muted">{a.scoring}</span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <label className="assessment-field">
+                      <div className="tiny muted" style={{ marginBottom: 4 }}>Week 1 baseline</div>
+                      <input
+                        type="text"
+                        value={v.baseline}
+                        placeholder={a.unit}
+                        onChange={e => store.setAssessmentField(a.id, 'baseline', e.target.value)}
+                        className="assessment-input"
+                      />
+                    </label>
+                    <label className="assessment-field">
+                      <div className="tiny muted" style={{ marginBottom: 4 }}>Week 16 retest</div>
+                      <input
+                        type="text"
+                        value={v.retest}
+                        placeholder={a.unit}
+                        onChange={e => store.setAssessmentField(a.id, 'retest', e.target.value)}
+                        className="assessment-input"
+                      />
+                    </label>
+                  </div>
+                  <label className="assessment-field" style={{ marginTop: 10, display: 'block' }}>
+                    <div className="tiny muted" style={{ marginBottom: 4 }}>Notes (optional)</div>
+                    <input
+                      type="text"
+                      value={v.notes}
+                      onChange={e => store.setAssessmentField(a.id, 'notes', e.target.value)}
+                      className="assessment-input"
+                      placeholder="e.g. bent-knee L-sit"
+                    />
+                  </label>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // Settings modal (global)
 // ============================================================================
 function SettingsModal({ store, onClose }) {
@@ -1334,13 +1462,13 @@ function SettingsModal({ store, onClose }) {
           <div>
             <div style={{ fontWeight: 700, fontSize: 14 }}>Default cadence</div>
             <div className="tiny muted" style={{ marginTop: 2 }}>
-              {store.state.cadence === '3day' ? 'Mon · Wed · Fri gym' : 'Mon · Fri gym'}
+              {store.state.cadence === '3day' ? 'Mon · Wed · Fri climbs · Tue + Sat home' : 'Mon · Thu climbs · Tue + Fri home'}
               {customized ? ` · ${customized} week${customized > 1 ? 's' : ''} customised` : ''}
             </div>
           </div>
           <div className="segmented">
-            <button className={store.state.cadence === '3day' ? 'on' : ''} onClick={() => store.setGlobalCadence('3day')}>3 day</button>
-            <button className={store.state.cadence === '2day' ? 'on' : ''} onClick={() => store.setGlobalCadence('2day')}>2 day</button>
+            <button className={store.state.cadence === '3day' ? 'on' : ''} onClick={() => store.setGlobalCadence('3day')}>3 climbs</button>
+            <button className={store.state.cadence === '2day' ? 'on' : ''} onClick={() => store.setGlobalCadence('2day')}>2 climbs</button>
           </div>
         </div>
 
@@ -1374,6 +1502,7 @@ function TabBar({ view, setView }) {
     { id: 'home', label: 'Home', icon: Icon.Home },
     { id: 'schedule', label: 'Schedule', icon: Icon.Calendar },
     { id: 'progress', label: 'Progress', icon: Icon.Chart },
+    { id: 'assess', label: 'Tests', icon: Icon.Target },
     { id: 'notes', label: 'Notes', icon: Icon.Book },
   ];
   return (
@@ -1429,6 +1558,8 @@ export default function App() {
         <ScheduleView store={store} openSession={openSession} openSettings={openSettings} />
       ) : view === 'progress' ? (
         <ProgressView store={store} openSettings={openSettings} />
+      ) : view === 'assess' ? (
+        <AssessmentsView store={store} openSettings={openSettings} />
       ) : (
         <NotesView store={store} openSettings={openSettings} />
       )}

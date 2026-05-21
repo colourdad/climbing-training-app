@@ -1389,3 +1389,99 @@ a { color: inherit; }
 .tiny  { font-size: 11px; }
 .hr-soft { height: 1px; background: var(--border); margin: 18px 0; }
 .row-gap-6 { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* ----- Drag + swipe interactions ----------------------------------------- */
+
+/* Drag handle (shared) */
+.drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.drag-handle:active { color: var(--text-2); }
+
+/* Drag handle inside DayRow edit mode */
+.day-drag-handle {
+  border-left: 1px solid var(--border);
+  display: flex;
+  align-items: stretch;
+}
+.day-drag-handle .drag-handle {
+  width: 48px;
+  height: auto;
+  align-self: stretch;
+}
+
+/* Drag handle inside ExerciseCard */
+.exercise-drag-handle {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  margin-top: -1px;
+}
+
+/* Swipe-to-delete row */
+.swipe-row-wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+}
+.swipe-row-bg {
+  position: absolute;
+  inset: 0;
+  background: var(--rust);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 20px;
+  border-radius: var(--radius);
+  pointer-events: none;
+}
+.swipe-row-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.swipe-row-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Sortable container + ghost */
+.sortable-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* default; overridden by parent contexts below */
+}
+.exercise-list .sortable-container { gap: 10px; }
+.day-list .sortable-container,
+.modal .sortable-container { gap: 8px; }
+.sortable-ghost {
+  background: var(--card);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 28px rgba(28, 26, 23, 0.2), 0 2px 8px rgba(28, 26, 23, 0.1);
+  overflow: hidden;
+  opacity: 0.96;
+}
+
+/* Restore removed exercises button */
+.restore-btn {
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: 1px dashed var(--border-2);
+  border-radius: 10px;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 150ms ease, color 150ms ease;
+  text-align: center;
+}
+.restore-btn:active { background: var(--card-2); color: var(--text); }

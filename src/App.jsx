@@ -13,15 +13,16 @@ import {
   formatDateLong,
   ASSESSMENTS,
   PLAN_START_DATE,
+  TOTAL_WEEKS,
   addDays,
 } from './data.js';
 
 // ============================================================================
 // localStorage
 // ============================================================================
-const STORAGE_KEY = 'send_climbing_v3';
-const SCHEMA_VERSION = 3;
-const LEGACY_KEYS = ['send_climbing_v2'];
+const STORAGE_KEY = 'send_climbing_v4';
+const SCHEMA_VERSION = 4;
+const LEGACY_KEYS = ['send_climbing_v2', 'send_climbing_v3'];
 
 function loadState() {
   try {
@@ -126,7 +127,7 @@ function useStore() {
   // ---- global cadence (default) ----
   const setGlobalCadence = (cad) => setState(s => ({ ...s, cadence: cad }));
 
-  // ---- assessments (Week 1 baseline / Week 16 retest) ----
+  // ---- assessments (Week 1 baseline / Week 17 retest) ----
   // Shape: assessments[testId] = { baseline: string, retest: string, notes: string }
   const assessmentFor = (id) => state.assessments[id] || { baseline: '', retest: '', notes: '' };
   const setAssessmentField = (id, field, value) => setState(s => {
@@ -959,7 +960,7 @@ function ScheduleView({ store, openSession, openSettings }) {
       </div>
 
       <div ref={stripRef} className="week-strip">
-        {Array.from({ length: 16 }, (_, i) => i + 1).map(w => {
+        {Array.from({ length: TOTAL_WEEKS }, (_, i) => i + 1).map(w => {
           const m = getWeekMeta(w);
           const sessionsThisWeek = getWeekSchedule(w, store.cadenceFor(w), store.patternFor(w)).filter(d => d.sessionType !== 'rest');
           const done = sessionsThisWeek.filter(d => {
@@ -1190,10 +1191,10 @@ function ProgressView({ store, openSettings }) {
   const totalSessions = allSessions.filter(s => s.sessionType !== 'rest').length;
   const overallPct = totalSessions ? Math.round((completedCount / totalSessions) * 100) : 0;
 
-  // Stacked bar chart counts: one entry per week (1–16), each is {skillId: count}.
+  // Stacked bar chart counts: one entry per week (1–TOTAL_WEEKS), each is {skillId: count}.
   // Each ticked exercise contributes 1, scaled by actualMinutes/plannedMinutes if the session was logged.
   const countsByWeek = useMemo(() => {
-    const weeks = Array.from({ length: 16 }, () => {
+    const weeks = Array.from({ length: TOTAL_WEEKS }, () => {
       const obj = {};
       SKILL_ORDER.forEach(s => { obj[s] = 0; });
       return obj;
@@ -1279,7 +1280,7 @@ function ProgressView({ store, openSettings }) {
       </div>
 
       <div className="section-head">
-        <h3>16-week heatmap</h3>
+        <h3>17-week heatmap</h3>
         <span className="section-sub">M · T · W · T · F · S · S</span>
       </div>
       <div className="card">
@@ -1460,7 +1461,7 @@ function NotesView({ store, openSession, openSettings }) {
 }
 
 // ============================================================================
-// Assessments view — 10 standardised tests, Week 1 baseline + Week 16 retest.
+// Assessments view — 10 standardised tests, Week 1 baseline + Week 17 retest.
 // ============================================================================
 function AssessmentsView({ store, openSettings }) {
   const [expanded, setExpanded] = useState(null);
@@ -1483,7 +1484,7 @@ function AssessmentsView({ store, openSettings }) {
 
       <div className="card" style={{ marginBottom: 14 }}>
         <div className="tiny muted" style={{ marginBottom: 6 }}>
-          Run all 10 tests in <strong>Week 1</strong> before training, and again in <strong>Week 16</strong> after two full rest days. Same order each time.
+          Run all 10 tests in <strong>Week 1</strong> before training, and again in <strong>Week 17</strong> after two full rest days. Same order each time.
         </div>
         <div className="tiny muted">
           {filled}/{ASSESSMENTS.length} recorded
@@ -1535,7 +1536,7 @@ function AssessmentsView({ store, openSettings }) {
                       />
                     </label>
                     <label className="assessment-field">
-                      <div className="tiny muted" style={{ marginBottom: 4 }}>Week 16 retest</div>
+                      <div className="tiny muted" style={{ marginBottom: 4 }}>Week 17 retest</div>
                       <input
                         type="text"
                         value={v.retest}

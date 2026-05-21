@@ -9,15 +9,17 @@ export const PLAN_START_DATE = '2026-05-18';
 // ----------------------------------------------------------------------------
 // Skill categories (8 colour-coded pills)
 // ----------------------------------------------------------------------------
+// 8 well-separated hues (≈ every 45° on the colour wheel) tuned slightly
+// muted so they sit comfortably on the dark earthy palette.
 export const SKILL_CATEGORIES = {
-  finger_prehab:      { label: 'Finger Prehab',      color: '#6E94A8', short: 'Prehab' },
-  base_strength:      { label: 'Base Strength',      color: '#94A3B8', short: 'Base' },
-  max_strength:       { label: 'Max Strength',       color: '#C2A878', short: 'Max' },
-  power:              { label: 'Power',              color: '#D97757', short: 'Power' },
-  muscular_endurance: { label: 'Muscular Endurance', color: '#B88A6F', short: 'Endurance' },
-  body_tension:       { label: 'Body Tension',       color: '#7A9E5F', short: 'Tension' },
-  mobility:           { label: 'Mobility',           color: '#4F8585', short: 'Mobility' },
-  technique:          { label: 'Technique',          color: '#A8957A', short: 'Technique' },
+  finger_prehab:      { label: 'Finger Prehab',      color: '#5B8FD9', short: 'Prehab' },     // blue
+  base_strength:      { label: 'Base Strength',      color: '#8B8682', short: 'Base' },       // warm slate (neutral)
+  max_strength:       { label: 'Max Strength',       color: '#E0B341', short: 'Max' },        // gold
+  power:              { label: 'Power',              color: '#E0594C', short: 'Power' },      // red
+  muscular_endurance: { label: 'Muscular Endurance', color: '#C8689E', short: 'Endurance' },  // magenta
+  body_tension:       { label: 'Body Tension',       color: '#6FB04A', short: 'Tension' },    // green
+  mobility:           { label: 'Mobility',           color: '#3FB5B5', short: 'Mobility' },   // teal
+  technique:          { label: 'Technique',          color: '#8B69C4', short: 'Technique' },  // purple
 };
 
 export const SKILL_ORDER = [
@@ -312,6 +314,22 @@ const restExercises = () => [
 ];
 
 // ----------------------------------------------------------------------------
+// Home gym session names per phase (from the PDF).
+// ----------------------------------------------------------------------------
+const HOME_A_NAMES = {
+  1: { full: 'Prehab, Core & Mobility',                short: 'Prehab' },
+  2: { full: 'Fingerboard + Pulling Strength',         short: 'Fingerboard' },
+  3: { full: 'Repeater Fingerboarding + SE',           short: 'Repeaters' },
+  4: { full: 'Maintenance',                            short: 'Maintenance' },
+};
+const HOME_B_NAMES = {
+  1: { full: 'Prehab & Mobility (repeat)',             short: 'Prehab' },
+  2: { full: 'Accessory Strength',                     short: 'Accessory' },
+  3: { full: 'Contact Strength + Maintenance',         short: 'Contact' },
+  4: { full: 'Maintenance',                            short: 'Maintenance' },
+};
+
+// ----------------------------------------------------------------------------
 // Build a session for a given type + week context.
 // ----------------------------------------------------------------------------
 function buildSession(type, phase, opts = {}) {
@@ -323,10 +341,14 @@ function buildSession(type, phase, opts = {}) {
       return { id: 'volume', name: deload ? 'Volume (deload)' : 'Volume / Endurance', short: 'Volume', duration: deload ? '60 min' : '~90 min', plannedMinutes: deload ? 60 : 90, location: 'Wall', accent: '#7A9E5F', exercises: volumeExercises(phase, deload) };
     case 'tech':
       return { id: 'tech', name: 'Technique', short: 'Technique', duration: '~75 min', plannedMinutes: 75, location: 'Wall', accent: '#A8957A', exercises: techExercises(phase, deload) };
-    case 'homeA':
-      return { id: 'homeA', name: 'Home Gym A', short: 'Home A', duration: '~60 min', plannedMinutes: 60, location: 'Home', accent: '#94A3B8', exercises: homeAExercises(phase, deload) };
-    case 'homeB':
-      return { id: 'homeB', name: 'Home Gym B', short: 'Home B', duration: '~60 min', plannedMinutes: 60, location: 'Home', accent: '#94A3B8', exercises: homeBExercises(phase, deload) };
+    case 'homeA': {
+      const n = HOME_A_NAMES[phase.id] || { full: 'Home Gym', short: 'Home' };
+      return { id: 'homeA', name: n.full, short: n.short, duration: '~60 min', plannedMinutes: 60, location: 'Home', accent: '#94A3B8', exercises: homeAExercises(phase, deload) };
+    }
+    case 'homeB': {
+      const n = HOME_B_NAMES[phase.id] || { full: 'Home Gym', short: 'Home' };
+      return { id: 'homeB', name: n.full, short: n.short, duration: '~60 min', plannedMinutes: 60, location: 'Home', accent: '#94A3B8', exercises: homeBExercises(phase, deload) };
+    }
     case 'lightHome':
       return { id: 'lightHome', name: 'Light Home (deload)', short: 'Light', duration: '~30 min', plannedMinutes: 30, location: 'Home', accent: '#6E94A8', exercises: lightHomeExercises() };
     case 'testing':
@@ -454,6 +476,10 @@ export function getAllSessions(cadenceFor = () => '3day', patternFor = () => nul
 // Build the exercise catalog (for search). Each catalog entry is unique per
 // session-type + phase + exercise id.
 // ----------------------------------------------------------------------------
+// Exercise ids treated as housekeeping (warm-up / cool-down / reflection) and
+// hidden from the searchable catalog so they don't clutter the Notes page.
+const HOUSEKEEPING_IDS = new Set(['warmup', 'warmup_pyramid', 'cooldown', 'reflect']);
+
 export function buildExerciseCatalog() {
   const seen = new Set();
   const catalog = [];
@@ -467,6 +493,7 @@ export function buildExerciseCatalog() {
         : [buildSession(t, phase, { deload: false })];
       builds.forEach(s => {
         s.exercises.forEach(e => {
+          if (HOUSEKEEPING_IDS.has(e.id)) return;
           const key = `${t}:p${phase.id}:${e.id}`;
           if (seen.has(key)) return;
           seen.add(key);
@@ -620,17 +647,6 @@ export const ASSESSMENTS = [
 // Notes content (reference)
 // ----------------------------------------------------------------------------
 export const NOTES_CONTENT = [
-  {
-    id: 'recovery',
-    heading: 'Recovery Non-Negotiables',
-    items: [
-      { title: 'Sleep 8+ hours', body: 'On training days especially. Tendon repair peaks during deep sleep; cutting sleep cuts adaptation.' },
-      { title: 'Protein 1.8–2.2 g/kg/day', body: 'Distribute across 4–5 meals. Do not undereat during a deload week.' },
-      { title: 'Warm up thoroughly', body: 'Before every session, especially before fingerboarding. Cold tendons snap.' },
-      { title: 'A2 pulley pain → stop', body: 'Sharp twinge at the base of ring or middle finger means stop immediately. See a physio within 48 hours.' },
-      { title: 'Wrist extensions daily', body: 'Every training day. Counteracts flexor-dominant climbing and prevents lateral epicondylitis.' },
-    ],
-  },
   {
     id: 'projecting',
     heading: 'On Projecting (Phase 2 onwards)',

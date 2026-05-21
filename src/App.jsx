@@ -11,9 +11,9 @@ import {
   todayISO,
   formatDateShort,
   formatDateLong,
-  NOTES_CONTENT,
-  buildExerciseCatalog,
   ASSESSMENTS,
+  PLAN_START_DATE,
+  addDays,
 } from './data.js';
 
 // ============================================================================
@@ -249,7 +249,7 @@ function StatusDot({ status, accent }) {
 // ============================================================================
 // Day row
 // ============================================================================
-function DayRow({ day, isToday, status, onClick, editMode, onMoveUp, onMoveDown, canUp, canDown }) {
+function DayRow({ day, isToday, status, onClick, editMode, onMoveUp, onMoveDown, canUp, canDown, onDelete }) {
   const isRest = day.sessionType === 'rest';
   return (
     <div className={`day-row ${isRest ? 'rest' : ''} ${status === 'done' ? 'complete' : ''} ${isToday ? 'is-today' : ''}`}>
@@ -271,6 +271,11 @@ function DayRow({ day, isToday, status, onClick, editMode, onMoveUp, onMoveDown,
           <button className="reorder-btn" disabled={!canDown} onClick={onMoveDown} aria-label="Move down">
             <Icon.Down style={{ width: 18, height: 18 }} />
           </button>
+          {onDelete && !isRest && (
+            <button className="reorder-btn delete-btn" onClick={onDelete} aria-label="Remove session" title="Convert to rest">
+              ×
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -639,7 +644,7 @@ function SessionDetail({ day, store, onBack }) {
           existingLog={log}
           currentNotes={notes}
           onClose={() => setEndModalOpen(false)}
-          onDone={() => { setEndModalOpen(false); }}
+          onDone={() => { setEndModalOpen(false); onBack(); }}
         />
       )}
     </div>
@@ -649,19 +654,47 @@ function SessionDetail({ day, store, onBack }) {
 // ============================================================================
 // Edit Week modal
 // ============================================================================
+// Session types the user can manually add via the EditWeekModal picker.
+// Order matches the priority a typical week reads top-to-bottom.
+const ADDABLE_SESSION_TYPES = ['limit', 'volume', 'tech', 'homeA', 'homeB'];
+
 function EditWeekModal({ weekNumber, store, onClose }) {
   const cadence = store.cadenceFor(weekNumber);
   const defaultPattern = useMemo(() => getDefaultPattern(weekNumber, cadence), [weekNumber, cadence]);
   const currentPattern = store.patternFor(weekNumber) || defaultPattern;
   const [pattern, setPattern] = useState(currentPattern);
   const [localCadence, setLocalCadence] = useState(cadence);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const meta = getWeekMeta(weekNumber);
+
+  // Resolve the phase-aware display info for a candidate session type, using
+  // this week's phase context (so homeA shows "Fingerboard + Pulling Strength"
+  // in Phase 2, "Maintenance" in Phase 4, etc.).
+  const sessionInfoFor = (type) => {
+    const probe = getWeekSchedule(weekNumber, localCadence, [type, 'rest', 'rest', 'rest', 'rest', 'rest', 'rest']);
+    return probe[0].session;
+  };
 
   const swap = (i, j) => {
     if (j < 0 || j >= 7) return;
     const next = [...pattern];
     [next[i], next[j]] = [next[j], next[i]];
     setPattern(next);
+  };
+
+  const removeAt = (i) => {
+    const next = [...pattern];
+    next[i] = 'rest';
+    setPattern(next);
+  };
+
+  const addSession = (type) => {
+    const restIndex = pattern.indexOf('rest');
+    if (restIndex === -1) return; // no slot available
+    const next = [...pattern];
+    next[restIndex] = type;
+    setPattern(next);
+    setPickerOpen(false);
   };
 
   const applyCadence = (newCad) => {
@@ -708,7 +741,7 @@ function EditWeekModal({ weekNumber, store, onClose }) {
 
         <div className="section-head" style={{ marginBottom: 8 }}>
           <h3 style={{ fontSize: 14 }}>Day order</h3>
-          <span className="section-sub tiny">use ↑ ↓ to swap</span>
+          <span className="section-sub tiny">use ↑ ↓ to swap · × to remove</span>
         </div>
 
         <div className="day-list">
@@ -726,10 +759,41 @@ function EditWeekModal({ weekNumber, store, onClose }) {
                 canDown={i < 6}
                 onMoveUp={() => swap(i, i - 1)}
                 onMoveDown={() => swap(i, i + 1)}
+                onDelete={() => removeAt(i)}
               />
             );
           })}
         </div>
+
+        {pickerOpen ? (
+          <div className="session-picker">
+            <div className="tiny muted" style={{ marginBottom: 8 }}>Add to next rest day</div>
+            <div className="session-picker-options">
+              {ADDABLE_SESSION_TYPES.map(t => {
+                const info = sessionInfoFor(t);
+                return (
+                  <button
+                    key={t}
+                    className="session-picker-option"
+                    onClick={() => addSession(t)}
+                  >
+                    <span className="session-picker-dot" style={{ background: info.accent }} />
+                    <span>{info.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <button className="modal-close" onClick={() => setPickerOpen(false)} style={{ marginTop: 8 }}>Cancel add</button>
+          </div>
+        ) : pattern.indexOf('rest') === -1 ? (
+          <div className="tiny muted" style={{ marginTop: 10, textAlign: 'center' }}>
+            No rest days left to replace.
+          </div>
+        ) : (
+          <button className="add-session-btn" onClick={() => setPickerOpen(true)}>
+            + Add session
+          </button>
+        )}
 
         <button className="modal-close" onClick={reset} style={{ marginTop: 14 }}>Reset week to default</button>
         <button className="modal-primary" onClick={save} style={{ marginTop: 8 }}>Save changes</button>
@@ -750,11 +814,14 @@ function HomeView({ store, openSession, openSettings }) {
   const meta = getWeekMeta(pos.weekNumber);
   const phase = meta.phase;
 
+  // Partial sessions count toward "done" totals — completed work is completed work.
+  const isCompleted = (status) => status === 'done' || status === 'partial';
+
   const weekSessions = week.filter(d => d.sessionType !== 'rest');
-  const weekDone = weekSessions.filter(d => store.getSessionStatus(d.weekNumber, d.dayIndex, d.session.exercises) === 'done').length;
+  const weekDone = weekSessions.filter(d => isCompleted(store.getSessionStatus(d.weekNumber, d.dayIndex, d.session.exercises))).length;
 
   const allSessions = useMemo(() => getAllSessions(store.cadenceFor, store.patternFor), [store.state]);
-  const totalDone = allSessions.filter(s => s.sessionType !== 'rest' && store.getSessionStatus(s.weekNumber, s.dayIndex, s.session.exercises) === 'done').length;
+  const totalDone = allSessions.filter(s => s.sessionType !== 'rest' && isCompleted(store.getSessionStatus(s.weekNumber, s.dayIndex, s.session.exercises))).length;
   const totalNonRest = allSessions.filter(s => s.sessionType !== 'rest').length;
   const overallPct = totalNonRest ? Math.round((totalDone / totalNonRest) * 100) : 0;
 
@@ -895,15 +962,20 @@ function ScheduleView({ store, openSession, openSettings }) {
         {Array.from({ length: 16 }, (_, i) => i + 1).map(w => {
           const m = getWeekMeta(w);
           const sessionsThisWeek = getWeekSchedule(w, store.cadenceFor(w), store.patternFor(w)).filter(d => d.sessionType !== 'rest');
-          const done = sessionsThisWeek.filter(d => store.getSessionStatus(w, d.dayIndex, d.session.exercises) === 'done').length;
+          const done = sessionsThisWeek.filter(d => {
+            const st = store.getSessionStatus(w, d.dayIndex, d.session.exercises);
+            return st === 'done' || st === 'partial';
+          }).length;
           const customized = store.state.weekCadence[w] || store.state.weekPattern[w];
           return (
             <button
               key={w}
               data-week={w}
               className={`week-chip ${w === activeWeek ? 'active' : ''} ${w === pos.weekNumber ? 'current' : ''} ${m.isDeload ? 'deload' : ''} ${m.isTaper ? 'taper' : ''} ${customized ? 'custom' : ''}`}
+              style={{ '--phase-accent': m.phase.accent }}
               onClick={() => setActiveWeek(w)}
             >
+              <div className="week-chip-phase-bar" />
               <div className="week-chip-num">Wk</div>
               <div className="week-chip-label">{w}</div>
               <div className="week-chip-tag">
@@ -1108,8 +1180,13 @@ function ProgressView({ store, openSettings }) {
   const pos = getPlanPosition(today);
 
   const allSessions = useMemo(() => getAllSessions(store.cadenceFor, store.patternFor), [store.state]);
-  const completedCount = allSessions.filter(s => s.sessionType !== 'rest' && store.getSessionStatus(s.weekNumber, s.dayIndex, s.session.exercises) === 'done').length;
-  const partialCount = allSessions.filter(s => s.sessionType !== 'rest' && store.getSessionStatus(s.weekNumber, s.dayIndex, s.session.exercises) === 'partial').length;
+  // Partial sessions are counted as done — work completed is work completed.
+  // Heatmap continues to distinguish partial visually via its own status logic.
+  const completedCount = allSessions.filter(s => {
+    if (s.sessionType === 'rest') return false;
+    const st = store.getSessionStatus(s.weekNumber, s.dayIndex, s.session.exercises);
+    return st === 'done' || st === 'partial';
+  }).length;
   const totalSessions = allSessions.filter(s => s.sessionType !== 'rest').length;
   const overallPct = totalSessions ? Math.round((completedCount / totalSessions) * 100) : 0;
 
@@ -1146,17 +1223,26 @@ function ProgressView({ store, openSettings }) {
       const week = getWeekSchedule(w, store.cadenceFor(w), store.patternFor(w));
       rows.push(week.map((d, i) => {
         const status = d.sessionType !== 'rest' ? store.getSessionStatus(w, i, d.session.exercises) : 'planned';
+        const log = store.sessionLogFor(w, i);
         return {
+          weekNumber: w,
+          dayIndex: i,
           sessionType: d.sessionType,
+          sessionName: d.session.name,
           accent: d.session.accent,
           status,
           deload: d.isDeload,
           isToday: w === pos.weekNumber && i === pos.dayIndex,
+          effort: log?.effort || 0,
+          difficulty: log?.difficulty || 0,
+          log,
         };
       }));
     }
     return rows;
   }, [store.state, pos.weekNumber, pos.dayIndex]);
+
+  const [cellModal, setCellModal] = useState(null);
 
   return (
     <div className="view">
@@ -1170,16 +1256,11 @@ function ProgressView({ store, openSettings }) {
         </button>
       </div>
 
-      <div className="stats">
+      <div className="stats stats-2">
         <div className="stat">
           <div className="stat-label">Done</div>
           <div className="stat-value">{completedCount}</div>
           <div className="stat-sub">of {totalSessions}</div>
-        </div>
-        <div className="stat">
-          <div className="stat-label">Partial</div>
-          <div className="stat-value">{partialCount}</div>
-          <div className="stat-sub">incomplete</div>
         </div>
         <div className="stat">
           <div className="stat-label">Complete</div>
@@ -1210,14 +1291,23 @@ function ProgressView({ store, openSettings }) {
           {heatmap.map((row, w) => (
             <React.Fragment key={w}>
               <div className="hm-label-side">{w + 1}</div>
-              {row.map((cell, d) => (
-                <div
-                  key={d}
-                  className={`hm-cell ${cell.sessionType === 'rest' ? 'rest' : ''} ${cell.status === 'done' ? 'done' : ''} ${cell.status === 'partial' ? 'partial' : ''} ${cell.deload ? 'deload' : ''} ${cell.isToday ? 'today' : ''}`}
-                  title={`Week ${w + 1}, Day ${d + 1}`}
-                  style={cell.status === 'done' || cell.status === 'partial' || cell.sessionType === 'rest' ? null : { borderColor: `${cell.accent}55` }}
-                />
-              ))}
+              {row.map((cell, d) => {
+                const showEffort = cell.status === 'done' && cell.effort > 0;
+                const clickable = cell.sessionType !== 'rest' && !!cell.log;
+                const Tag = clickable ? 'button' : 'div';
+                return (
+                  <Tag
+                    key={d}
+                    type={clickable ? 'button' : undefined}
+                    className={`hm-cell ${cell.sessionType === 'rest' ? 'rest' : ''} ${cell.status === 'done' ? 'done' : ''} ${cell.status === 'partial' ? 'partial' : ''} ${cell.deload ? 'deload' : ''} ${cell.isToday ? 'today' : ''} ${clickable ? 'clickable' : ''}`}
+                    title={`Week ${w + 1}, Day ${d + 1}`}
+                    style={cell.status === 'done' || cell.status === 'partial' || cell.sessionType === 'rest' ? null : { borderColor: `${cell.accent}55` }}
+                    onClick={clickable ? () => setCellModal(cell) : undefined}
+                  >
+                    {showEffort ? cell.effort : ''}
+                  </Tag>
+                );
+              })}
             </React.Fragment>
           ))}
         </div>
@@ -1227,34 +1317,105 @@ function ProgressView({ store, openSettings }) {
           <span><span className="sw" style={{ background: 'var(--bg-2)', border: '1px solid var(--border)' }} /> planned</span>
           <span><span className="sw" style={{ background: 'var(--bg-2)', border: '1px solid var(--border)', opacity: 0.35 }} /> rest</span>
           <span><span className="sw" style={{ border: '2px solid var(--accent)', background: 'transparent' }} /> today</span>
+          <span className="hm-legend-hint tiny muted">tap a logged day for details</span>
         </div>
+      </div>
+
+      {cellModal && (
+        <HeatmapCellModal cell={cellModal} onClose={() => setCellModal(null)} />
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// Heatmap cell detail modal — shown when a logged day is tapped.
+// ============================================================================
+function HeatmapCellModal({ cell, onClose }) {
+  const startDate = addDays(PLAN_START_DATE, (cell.weekNumber - 1) * 7 + cell.dayIndex);
+  const dateLabel = formatDateLong(startDate);
+
+  const renderRating = (value) => {
+    if (!value) return <span className="muted">—</span>;
+    return (
+      <span className="rating-pips">
+        {[1, 2, 3, 4, 5].map(n => (
+          <span key={n} className={`rating-pip ${value >= n ? 'on' : ''}`} />
+        ))}
+        <span className="tiny muted" style={{ marginLeft: 6 }}>{value}/5</span>
+      </span>
+    );
+  };
+
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal modal-narrow" onClick={e => e.stopPropagation()}>
+        <h3 style={{ marginBottom: 4 }}>{cell.sessionName}</h3>
+        <div className="tiny muted" style={{ marginBottom: 16 }}>{dateLabel} · Week {cell.weekNumber}</div>
+
+        <div className="cell-detail-row">
+          <span className="cell-detail-label">Effort</span>
+          {renderRating(cell.effort)}
+        </div>
+        <div className="cell-detail-row">
+          <span className="cell-detail-label">Difficulty</span>
+          {renderRating(cell.difficulty)}
+        </div>
+
+        <button className="modal-close" onClick={onClose}>Close</button>
       </div>
     </div>
   );
 }
 
 // ============================================================================
-// Notes view (incl. muscle search)
+// Notes view — chronological diary of session notes.
 // ============================================================================
-function NotesView({ store, openSettings }) {
-  const catalog = useMemo(() => buildExerciseCatalog(), []);
-  const [search, setSearch] = useState('');
-
-  const filtered = useMemo(() => {
-    if (!search.trim()) return catalog;
-    const q = search.toLowerCase();
-    return catalog.filter(e =>
-      e.name.toLowerCase().includes(q) ||
-      e.muscles.some(m => m.toLowerCase().includes(q)) ||
-      (e.description || '').toLowerCase().includes(q)
-    );
-  }, [catalog, search]);
+function NotesView({ store, openSession, openSettings }) {
+  // Build a chronological list of every session log that has notes content.
+  // For each entry we resolve the session name and date so the row can stand
+  // on its own.
+  const entries = useMemo(() => {
+    const out = [];
+    const logs = store.state.sessionLog || {};
+    Object.entries(logs).forEach(([key, log]) => {
+      if (!log || !log.notes || !log.notes.trim()) return;
+      const m = /^w(\d+)_d(\d+)$/.exec(key);
+      if (!m) return;
+      const weekNumber = Number(m[1]);
+      const dayIndex = Number(m[2]);
+      const day = getWeekSchedule(weekNumber, store.cadenceFor(weekNumber), store.patternFor(weekNumber))[dayIndex];
+      if (!day) return;
+      const dateISO = addDays(PLAN_START_DATE, (weekNumber - 1) * 7 + dayIndex);
+      out.push({
+        key,
+        weekNumber,
+        dayIndex,
+        day,
+        sessionName: day.session.name,
+        accent: day.session.accent,
+        notes: log.notes,
+        effort: log.effort || 0,
+        difficulty: log.difficulty || 0,
+        endedAt: log.endedAt || null,
+        dateISO,
+      });
+    });
+    // Sort most-recent first. Prefer endedAt when present; otherwise fall back
+    // to the planned date so notes saved mid-session still appear in order.
+    out.sort((a, b) => {
+      const aT = a.endedAt ? new Date(a.endedAt).getTime() : new Date(a.dateISO + 'T00:00:00').getTime();
+      const bT = b.endedAt ? new Date(b.endedAt).getTime() : new Date(b.dateISO + 'T00:00:00').getTime();
+      return bT - aT;
+    });
+    return out;
+  }, [store.state]);
 
   return (
     <div className="view">
       <div className="top">
         <div>
-          <div className="top-sub">Reference</div>
+          <div className="top-sub">Session diary</div>
           <h1>Notes</h1>
         </div>
         <button className="cog" onClick={openSettings} aria-label="Settings">
@@ -1262,80 +1423,37 @@ function NotesView({ store, openSettings }) {
         </button>
       </div>
 
-      {/* Muscle search */}
-      <div className="section-head">
-        <h3>Find an exercise</h3>
-        <span className="section-sub">search by name, muscle, or description</span>
-      </div>
-
-      <div className="search-bar">
-        <Icon.Search style={{ width: 16, height: 16, color: 'var(--text-2)' }} />
-        <input
-          type="text"
-          placeholder="Search exercises…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-        {search && (
-          <button className="search-clear" onClick={() => setSearch('')}>×</button>
-        )}
-      </div>
-
-      {search && (
-        <div className="search-meta tiny muted" style={{ marginTop: 10 }}>
-          {filtered.length} {filtered.length === 1 ? 'exercise' : 'exercises'} matching "{search}"
-        </div>
-      )}
-
-      {search ? (
-        <div className="exercise-list" style={{ marginTop: 12 }}>
-          {filtered.map((e, i) => (
-            <div key={`${e.sessionType}-${e.id}`} className="exercise" style={{ paddingTop: 12 }}>
-              <div className="exercise-body" style={{ flex: 1 }}>
-                <div className="exercise-row">
-                  <span className="exercise-name">{e.name}</span>
-                  <span className="exercise-meta">{e.sets}</span>
-                </div>
-                <div className="exercise-tags" style={{ marginTop: 4 }}>
-                  <SkillPill categoryId={e.category} compact />
-                  <span className="tiny muted">{e.sessionName}</span>
-                </div>
-                {e.description && <div className="exercise-notes">{e.description}</div>}
-                <div className="row-gap-6" style={{ marginTop: 6 }}>
-                  {e.muscles.map(m => (
-                    <span key={m} className="muscle-chip">{m}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-          {filtered.length === 0 && (
-            <div className="card muted" style={{ textAlign: 'center', padding: 28 }}>No exercises match.</div>
-          )}
+      {entries.length === 0 ? (
+        <div className="card muted" style={{ textAlign: 'center', padding: 28, marginTop: 14 }}>
+          <div style={{ marginBottom: 6, fontWeight: 600 }}>No notes yet.</div>
+          <div className="tiny">Write something in the Notes field on any session and it'll appear here.</div>
         </div>
       ) : (
-        <>
-          {/* Notes content */}
-          {NOTES_CONTENT.map(group => (
-            <div className="note-group" key={group.id} style={{ marginTop: 18 }}>
-              <h4>{group.heading}</h4>
-              {group.items.map((item, i) => (
-                <div key={i} className="note-item">
-                  <strong>{item.title}</strong>
-                  <p>{item.body}</p>
+        <div className="diary-list">
+          {entries.map(e => (
+            <button
+              key={e.key}
+              className="diary-entry"
+              onClick={() => openSession(e.day)}
+            >
+              <div className="diary-bar" style={{ background: e.accent }} />
+              <div className="diary-body">
+                <div className="diary-head">
+                  <div className="diary-session">{e.sessionName}</div>
+                  <div className="diary-date tiny muted">{formatDateShort(e.dateISO)} · Wk {e.weekNumber}</div>
                 </div>
-              ))}
-            </div>
+                <div className="diary-notes">{e.notes}</div>
+                {(e.effort > 0 || e.difficulty > 0) && (
+                  <div className="diary-meta tiny muted">
+                    {e.effort > 0 && <span>Effort {e.effort}/5</span>}
+                    {e.effort > 0 && e.difficulty > 0 && <span> · </span>}
+                    {e.difficulty > 0 && <span>Difficulty {e.difficulty}/5</span>}
+                  </div>
+                )}
+              </div>
+            </button>
           ))}
-
-          <div className="section-head">
-            <h3>Skill categories</h3>
-            <span className="section-sub">colour key</span>
-          </div>
-          <div className="card row-gap-6">
-            {SKILL_ORDER.map(c => <SkillPill key={c} categoryId={c} />)}
-          </div>
-        </>
+        </div>
       )}
     </div>
   );
@@ -1529,7 +1647,11 @@ export default function App() {
   const [selectedDay, setSelectedDay] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const openSession = (day) => setSelectedDay(day);
+  // Tab the user was on when they opened a session — restored on back.
+  const prevViewRef = useRef('home');
+
+  const openSession = (day) => { prevViewRef.current = view; setSelectedDay(day); };
+  const closeSession = () => { setView(prevViewRef.current); setSelectedDay(null); };
   const openSettings = () => setSettingsOpen(true);
 
   const handleSetView = (v) => { setSelectedDay(null); setView(v); };
@@ -1551,7 +1673,7 @@ export default function App() {
   return (
     <div className="app">
       {dayForRender ? (
-        <SessionDetail day={dayForRender} store={store} onBack={() => setSelectedDay(null)} />
+        <SessionDetail day={dayForRender} store={store} onBack={closeSession} />
       ) : view === 'home' ? (
         <HomeView store={store} openSession={openSession} openSettings={openSettings} />
       ) : view === 'schedule' ? (
@@ -1561,7 +1683,7 @@ export default function App() {
       ) : view === 'assess' ? (
         <AssessmentsView store={store} openSettings={openSettings} />
       ) : (
-        <NotesView store={store} openSettings={openSettings} />
+        <NotesView store={store} openSession={openSession} openSettings={openSettings} />
       )}
 
       <TabBar view={view} setView={handleSetView} />

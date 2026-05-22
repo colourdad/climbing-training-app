@@ -5,18 +5,18 @@ Paste this file (or its key sections) at the start of a new chat to resume.
 
 ---
 
-## Current state (as of the v5.0.2 commit, deployed green on Vercel)
+## Current state (Pass 6 complete — modals + SessionView extracted)
 
-`src/App.jsx` is **1406 lines** (was 2019). All non-UI layers and the leaf
-components have been extracted. The next four passes extract the remaining
-inline view components.
+`src/App.jsx` is **839 lines** (was 2019, was 1406 before Pass 5). All
+modals and the session detail screen are out. The remaining inline functions
+are the five tab views plus the tab bar.
 
 ### File tree as it stands now
 
 ```
 src/
 ├── main.jsx
-├── App.jsx                     # 1406 lines — still contains all views, modals, TabBar, ExerciseTimer
+├── App.jsx                     # 839 lines — five tab views + TabBar still inline
 ├── styles.css                  # untouched
 ├── data.js                     # 52-line re-export shim (kept temporarily so old imports work)
 ├── data/
@@ -36,27 +36,26 @@ src/
     ├── SkillPill.jsx           # SkillPill + StatusDot
     ├── DayRow.jsx
     ├── SortableList.jsx        # SortableList + SwipeDeleteRow
-    └── ExerciseCard.jsx        # ExerciseCard + RatingRow
+    ├── ExerciseCard.jsx        # ExerciseCard + RatingRow + ExerciseTimer (owns beep/fmtSec)
+    ├── SettingsModal.jsx       # ← Pass 5
+    ├── HeatmapCellModal.jsx    # ← Pass 5
+    ├── EndSessionModal.jsx     # ← Pass 5
+    ├── EditWeekModal.jsx       # ← Pass 5
+    └── SessionView.jsx         # ← Pass 6 (was SessionDetail)
 ```
 
 ### Functions still inline in App.jsx (these are the next targets)
 
 | Line | Function           | Goes to                                |
 |-----:|--------------------|----------------------------------------|
-|   29 | `ExerciseTimer`    | Pass 6 — `SessionView.jsx` (or merge into ExerciseCard.jsx) |
-|  100 | `EndSessionModal`  | Pass 5 — `components/EndSessionModal.jsx` |
-|  170 | `SessionDetail`    | Pass 6 — `components/SessionView.jsx`  |
-|  356 | `EditWeekModal`    | Pass 5 — `components/EditWeekModal.jsx` |
-|  508 | `HomeView`         | Pass 7 — `components/HomeTab.jsx`      |
-|  630 | `ScheduleView`     | Pass 7 — `components/ScheduleTab.jsx`  |
-|  744 | `StackedBarChart`  | Pass 7 — co-located inside `ProgressTab.jsx` |
-|  861 | `StackedBarLegend` | Pass 7 — co-located inside `ProgressTab.jsx` |
-|  877 | `ProgressView`     | Pass 7 — `components/ProgressTab.jsx`  |
-| 1046 | `HeatmapCellModal` | Pass 5 — `components/HeatmapCellModal.jsx` |
-| 1086 | `NotesView`        | Pass 7 — `components/NotesTab.jsx`     |
-| 1177 | `AssessmentsView`  | Pass 7 — `components/AssessmentsTab.jsx` |
-| 1283 | `SettingsModal`    | Pass 5 — `components/SettingsModal.jsx` |
-| 1330 | `TabBar`           | Pass 8 — `components/Navigation.jsx`   |
+|   28 | `HomeView`         | Pass 7 — `components/HomeTab.jsx`      |
+|  150 | `ScheduleView`     | Pass 7 — `components/ScheduleTab.jsx`  |
+|  264 | `StackedBarChart`  | Pass 7 — co-located inside `ProgressTab.jsx` |
+|  381 | `StackedBarLegend` | Pass 7 — co-located inside `ProgressTab.jsx` |
+|  397 | `ProgressView`     | Pass 7 — `components/ProgressTab.jsx`  |
+|  566 | `NotesView`        | Pass 7 — `components/NotesTab.jsx`     |
+|  657 | `AssessmentsView`  | Pass 7 — `components/AssessmentsTab.jsx` |
+|  763 | `TabBar`           | Pass 8 — `components/Navigation.jsx`   |
 
 After Pass 8, App.jsx should be ~100 lines (a hooks setup + view switcher),
 and `data.js` (the shim) gets deleted.
@@ -66,14 +65,6 @@ and `data.js` (the shim) gets deleted.
 ## Remaining passes
 
 Each pass = one commit. Each pass leaves the app fully working.
-
-### Pass 5 — Modals
-Extract `SettingsModal`, `EditWeekModal`, `EndSessionModal`, `HeatmapCellModal`
-into their own files under `components/`. Self-contained, low risk.
-
-### Pass 6 — SessionView
-Extract `SessionDetail` → `components/SessionView.jsx`. Decide whether
-`ExerciseTimer` lives there or moves into `ExerciseCard.jsx`.
 
 ### Pass 7 — Tab views
 One commit per tab:

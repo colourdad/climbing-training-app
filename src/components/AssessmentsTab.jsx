@@ -5,7 +5,7 @@
 // ============================================================================
 
 import { useState } from 'react';
-import { ASSESSMENTS } from '../data.js';
+import { ASSESSMENTS } from '../data/assessments.js';
 import { Icon } from './icons.jsx';
 
 export function AssessmentsTab({ store, openSettings }) {

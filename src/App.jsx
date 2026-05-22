@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react';
 import { useTrainingPlan } from './hooks/useTrainingPlan.js';
-import { getWeekSchedule } from './data.js';
-import { Icon } from './components/icons.jsx';
+import { getWeekSchedule } from './services/planGenerator.js';
 import { SettingsModal } from './components/SettingsModal.jsx';
 import { SessionView } from './components/SessionView.jsx';
 import { HomeTab } from './components/HomeTab.jsx';
@@ -9,36 +8,14 @@ import { ScheduleTab } from './components/ScheduleTab.jsx';
 import { ProgressTab } from './components/ProgressTab.jsx';
 import { NotesTab } from './components/NotesTab.jsx';
 import { AssessmentsTab } from './components/AssessmentsTab.jsx';
+import { Navigation } from './components/Navigation.jsx';
 
 // ============================================================================
-// Tab bar
+// Root App — owns the tab/view + session selection state and routes between
+// the five tab views, the session detail screen, and the global settings
+// modal. Everything else lives in its own component file.
 // ============================================================================
-function TabBar({ view, setView }) {
-  const tabs = [
-    { id: 'home', label: 'Home', icon: Icon.Home },
-    { id: 'schedule', label: 'Schedule', icon: Icon.Calendar },
-    { id: 'progress', label: 'Progress', icon: Icon.Chart },
-    { id: 'assess', label: 'Tests', icon: Icon.Target },
-    { id: 'notes', label: 'Notes', icon: Icon.Book },
-  ];
-  return (
-    <nav className="tabbar">
-      {tabs.map(t => {
-        const Ico = t.icon;
-        return (
-          <button key={t.id} className={`tab ${view === t.id ? 'active' : ''}`} onClick={() => setView(t.id)}>
-            <Ico className="tab-icon" />
-            <span>{t.label}</span>
-          </button>
-        );
-      })}
-    </nav>
-  );
-}
 
-// ============================================================================
-// Root App
-// ============================================================================
 export default function App() {
   const store = useTrainingPlan();
   const [view, setView] = useState('home');
@@ -84,7 +61,7 @@ export default function App() {
         <NotesTab store={store} openSession={openSession} openSettings={openSettings} />
       )}
 
-      <TabBar view={view} setView={handleSetView} />
+      <Navigation view={view} setView={handleSetView} />
 
       {settingsOpen && <SettingsModal store={store} onClose={() => setSettingsOpen(false)} />}
     </div>

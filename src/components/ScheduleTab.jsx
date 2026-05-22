@@ -5,14 +5,8 @@
 // ============================================================================
 
 import { useEffect, useRef, useState } from 'react';
-import {
-  TOTAL_WEEKS,
-  getPlanPosition,
-  getWeekSchedule,
-  getWeekMeta,
-  todayISO,
-  formatDateShort,
-} from '../data.js';
+import { TOTAL_WEEKS, getPlanPosition, todayISO, formatDateShort } from '../data/sessions.js';
+import { getWeekSchedule, getWeekMeta } from '../services/planGenerator.js';
 import { Icon } from './icons.jsx';
 import { DayRow } from './DayRow.jsx';
 import { EditWeekModal } from './EditWeekModal.jsx';

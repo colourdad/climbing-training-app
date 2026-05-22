@@ -6,12 +6,8 @@
 // ============================================================================
 
 import { useMemo } from 'react';
-import {
-  getWeekSchedule,
-  formatDateShort,
-  PLAN_START_DATE,
-  addDays,
-} from '../data.js';
+import { getWeekSchedule } from '../services/planGenerator.js';
+import { formatDateShort, PLAN_START_DATE, addDays } from '../data/sessions.js';
 import { Icon } from './icons.jsx';
 
 export function NotesTab({ store, openSession, openSettings }) {

@@ -5,7 +5,7 @@
 // ============================================================================
 
 import { useMemo, useState } from 'react';
-import { getWeekSchedule, getWeekMeta, getDefaultPattern } from '../data.js';
+import { getWeekSchedule, getWeekMeta, getDefaultPattern } from '../services/planGenerator.js';
 import { DayRow } from './DayRow.jsx';
 import { SwipeDeleteRow, SortableList } from './SortableList.jsx';
 

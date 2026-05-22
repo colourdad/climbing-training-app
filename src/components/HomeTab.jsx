@@ -4,15 +4,8 @@
 // ============================================================================
 
 import { useMemo } from 'react';
-import {
-  getPlanPosition,
-  getWeekSchedule,
-  getWeekMeta,
-  getAllSessions,
-  todayISO,
-  formatDateLong,
-  formatDateShort,
-} from '../data.js';
+import { getPlanPosition, todayISO, formatDateLong, formatDateShort } from '../data/sessions.js';
+import { getWeekSchedule, getWeekMeta, getAllSessions } from '../services/planGenerator.js';
 import { Icon } from './icons.jsx';
 import { DayRow } from './DayRow.jsx';
 

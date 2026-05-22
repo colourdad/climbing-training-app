@@ -7,7 +7,8 @@
 // ============================================================================
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getWeekMeta, formatDateShort } from '../data.js';
+import { getWeekMeta } from '../services/planGenerator.js';
+import { formatDateShort } from '../data/sessions.js';
 import { Icon } from './icons.jsx';
 import { SwipeDeleteRow, SortableList } from './SortableList.jsx';
 import { ExerciseCard } from './ExerciseCard.jsx';

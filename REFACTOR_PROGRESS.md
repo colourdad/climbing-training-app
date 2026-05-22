@@ -1,23 +1,26 @@
 # Climbing App — Refactor Progress
 
-Hand-off document for the monolithic-`App.jsx` → modular-feature-folder refactor.
-Paste this file (or its key sections) at the start of a new chat to resume.
+**Refactor complete.** This file is now a record of the eight-pass refactor
+from a 2019-line monolithic `App.jsx` to a modular feature-folder layout.
+The rules-learned-the-hard-way section at the bottom is still useful when
+making changes to this codebase.
 
 ---
 
-## Current state (Pass 7 complete — all tab views extracted)
+## Final state
 
-`src/App.jsx` is **92 lines** (was 2019 at the start of the refactor).
-Every view and modal is in its own file. Only `TabBar` remains inline.
+`src/App.jsx` is **69 lines** — only the root `App` component (state setup,
+view switcher, session-detail routing). Every other view, modal, and helper
+lives in its own file. The transitional `src/data.js` shim is gone; every
+import now goes directly to the underlying module under `data/` or `services/`.
 
-### File tree as it stands now
+### File tree
 
 ```
 src/
-├── main.jsx
-├── App.jsx                     # 92 lines — TabBar inline, otherwise hooks setup + view switcher
+├── main.jsx                    # entry point
+├── App.jsx                     # 69 lines — root component only
 ├── styles.css                  # untouched
-├── data.js                     # 52-line re-export shim (delete in Pass 8 once nothing imports from it)
 ├── data/
 │   ├── sessions.js             # plan constants + date utilities
 │   ├── exercises.js            # exercise catalogues
@@ -28,7 +31,7 @@ src/
 │   ├── planGenerator.js        # buildSession, getWeekSchedule, getAllSessions, getWeekMeta, getPhase, getDefaultPattern
 │   └── progressCalculator.js   # calcCompletionStats, calcEffortStats, calcCountsByWeek, buildHeatmap
 ├── hooks/
-│   ├── useTrainingPlan.js      # store: state + action creators (replaces inline useStore)
+│   ├── useTrainingPlan.js      # store: state + action creators
 │   └── useProgress.js          # memoised derived stats
 └── components/
     ├── icons.jsx               # Icon.* SVG components
@@ -36,47 +39,45 @@ src/
     ├── DayRow.jsx
     ├── SortableList.jsx        # SortableList + SwipeDeleteRow
     ├── ExerciseCard.jsx        # ExerciseCard + RatingRow + ExerciseTimer (owns beep/fmtSec)
-    ├── SettingsModal.jsx       # ← Pass 5
-    ├── HeatmapCellModal.jsx    # ← Pass 5
-    ├── EndSessionModal.jsx     # ← Pass 5
-    ├── EditWeekModal.jsx       # ← Pass 5
-    ├── SessionView.jsx         # ← Pass 6 (was SessionDetail)
-    ├── HomeTab.jsx             # ← Pass 7 (was HomeView)
-    ├── ScheduleTab.jsx         # ← Pass 7 (was ScheduleView)
-    ├── ProgressTab.jsx         # ← Pass 7 (was ProgressView + StackedBarChart + StackedBarLegend)
-    ├── NotesTab.jsx            # ← Pass 7 (was NotesView)
-    └── AssessmentsTab.jsx      # ← Pass 7 (was AssessmentsView)
+    ├── SettingsModal.jsx
+    ├── HeatmapCellModal.jsx
+    ├── EndSessionModal.jsx
+    ├── EditWeekModal.jsx
+    ├── SessionView.jsx
+    ├── HomeTab.jsx
+    ├── ScheduleTab.jsx
+    ├── ProgressTab.jsx         # co-locates StackedBarChart + StackedBarLegend
+    ├── NotesTab.jsx
+    ├── AssessmentsTab.jsx
+    └── Navigation.jsx          # bottom tab bar (was inline `TabBar`)
 ```
 
-### Functions still inline in App.jsx
+### What each pass did
 
-| Line | Function | Goes to                              |
-|-----:|----------|--------------------------------------|
-|   16 | `TabBar` | Pass 8 — `components/Navigation.jsx` |
-
----
-
-## Remaining passes
-
-### Pass 8 — Navigation + cleanup
-Extract `TabBar` → `Navigation.jsx`. Trim App.jsx to ~100 lines. Delete the
-`src/data.js` shim once nothing imports from it.
+| Pass | Commit | What                                                          |
+|-----:|--------|---------------------------------------------------------------|
+|  1–4 | pre-v5.0.2 | Extracted data/, services/, hooks/, and the leaf components |
+|    5 | v5.0.3 | Modals: `SettingsModal`, `HeatmapCellModal`, `EndSessionModal`, `EditWeekModal` |
+|    6 | v5.0.4 | `SessionView` (was `SessionDetail`) |
+|   7a–c | v5.0.5 | `HomeTab`, `ScheduleTab`, `ProgressTab` (+ chart helpers co-located) |
+|   7d–e | v5.0.6 | `NotesTab`, `AssessmentsTab` |
+|    8 | this commit | `Navigation` (was `TabBar`) + migrate every `./data.js` import to its real source + delete the `data.js` shim |
 
 ---
 
-## Rules learned the hard way
+## Rules learned the hard way (still relevant for ongoing work)
 
 1. **JSX only in `.jsx` files.** Vite/Rollup will not parse JSX inside a `.js`
    file. (v5.0 → v5.0.1 broke because `icons.js` contained `<svg>`. Renamed to
-   `icons.jsx` in v5.0.2.) Audit after each pass:
+   `icons.jsx` in v5.0.2.) Audit after any structural change:
    ```
    find src -name "*.js" | xargs grep -lE '<[A-Za-z]'
    ```
    Output must be empty.
 
 2. **Delete the inline copy in the same commit as the new file.** v5.0 broke
-   because the helper components were imported AND still defined inline,
-   causing "symbol already declared" errors.
+   because helper components were imported AND still defined inline, causing
+   "symbol already declared" errors. Applies any time you split a file.
 
 3. **Run a strict esbuild bundle before pushing.** The sandbox can't run
    `npm install` against the public registry, but esbuild is available at
@@ -91,7 +92,8 @@ Extract `TabBar` → `Navigation.jsx`. Trim App.jsx to ~100 lines. Delete the
 
 4. **localStorage key must remain `send_climbing_v4`.** Lives in
    `services/migrations.js` along with `SCHEMA_VERSION = 4` and the legacy
-   keys array `['send_climbing_v2', 'send_climbing_v3']`. Don't bump these.
+   keys array `['send_climbing_v2', 'send_climbing_v3']`. Don't bump these
+   unless you're intentionally migrating user data.
 
 5. **Commits happen in GitHub Desktop, not from the sandbox.** Tai uses
    GitHub Desktop with the `colourdad <wjpjwgmz96@privaterelay.appleid.com>`
@@ -99,16 +101,9 @@ Extract `TabBar` → `Navigation.jsx`. Trim App.jsx to ~100 lines. Delete the
 
 6. **`.git/index.lock` sometimes gets stuck.** If a sandbox `rm` fails with
    "Operation not permitted", use the `mcp__cowork__allow_cowork_file_delete`
-   tool to enable deletion in this folder.
+   tool to enable deletion in this folder, then `rm .git/index.lock`.
 
----
-
-## How to resume
-
-Open a new chat with Cowork pointed at this folder, then paste:
-
-> Continue the climbing app refactor. Read REFACTOR_PROGRESS.md for full
-> context. We're starting Pass 5 (extract the four modals).
-
-The new session has access to the same memory store and will pick up the
-established conventions automatically.
+7. **Import from the real source, not a barrel.** The `data.js` shim is gone;
+   import directly from `data/sessions.js`, `data/phases.js`, `data/exercises.js`,
+   `data/assessments.js`, or `services/planGenerator.js`. Re-introducing a
+   barrel makes dead-symbol detection harder.

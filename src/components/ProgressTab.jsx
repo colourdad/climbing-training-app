@@ -5,15 +5,9 @@
 // ============================================================================
 
 import React, { useMemo, useState } from 'react';
-import {
-  SKILL_CATEGORIES,
-  SKILL_ORDER,
-  TOTAL_WEEKS,
-  getPlanPosition,
-  getWeekSchedule,
-  getAllSessions,
-  todayISO,
-} from '../data.js';
+import { SKILL_CATEGORIES, SKILL_ORDER } from '../data/phases.js';
+import { TOTAL_WEEKS, getPlanPosition, todayISO } from '../data/sessions.js';
+import { getWeekSchedule, getAllSessions } from '../services/planGenerator.js';
 import { Icon } from './icons.jsx';
 import { HeatmapCellModal } from './HeatmapCellModal.jsx';
 

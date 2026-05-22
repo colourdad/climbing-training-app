@@ -3,7 +3,7 @@
 // Progress-tab heatmap is tapped. Read-only: surfaces effort + difficulty.
 // ============================================================================
 
-import { PLAN_START_DATE, addDays, formatDateLong } from '../data.js';
+import { PLAN_START_DATE, addDays, formatDateLong } from '../data/sessions.js';
 
 export function HeatmapCellModal({ cell, onClose }) {
   const startDate = addDays(PLAN_START_DATE, (cell.weekNumber - 1) * 7 + cell.dayIndex);

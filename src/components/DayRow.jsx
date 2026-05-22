@@ -3,7 +3,7 @@
 // Used by HomeTab, ScheduleTab, and EditWeekModal.
 // ============================================================================
 
-import { Icon } from './icons.js';
+import { Icon } from './icons.jsx';
 import { StatusDot } from './SkillPill.jsx';
 
 export function DayRow({ day, isToday, status, onClick, editMode, onDragHandleTouch }) {

@@ -5,7 +5,7 @@
 // ============================================================================
 
 import { useState, useEffect, useRef } from 'react';
-import { Icon } from './icons.js';
+import { Icon } from './icons.jsx';
 import { SkillPill } from './SkillPill.jsx';
 
 // ----------------------------------------------------------------------------

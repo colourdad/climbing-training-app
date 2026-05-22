@@ -15,7 +15,7 @@ import {
   TOTAL_WEEKS,
   addDays,
 } from './data.js';
-import { Icon } from './components/icons.js';
+import { Icon } from './components/icons.jsx';
 import { SkillPill, StatusDot } from './components/SkillPill.jsx';
 import { DayRow } from './components/DayRow.jsx';
 import { SwipeDeleteRow, SortableList } from './components/SortableList.jsx';

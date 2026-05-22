@@ -4,7 +4,7 @@
 // ============================================================================
 
 import { SKILL_CATEGORIES } from '../data/phases.js';
-import { Icon } from './icons.js';
+import { Icon } from './icons.jsx';
 
 export function SkillPill({ categoryId, compact = false }) {
   const c = SKILL_CATEGORIES[categoryId];

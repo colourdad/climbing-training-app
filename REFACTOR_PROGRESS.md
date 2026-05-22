@@ -5,20 +5,19 @@ Paste this file (or its key sections) at the start of a new chat to resume.
 
 ---
 
-## Current state (Pass 7 partial — Home/Schedule/Progress tabs extracted)
+## Current state (Pass 7 complete — all tab views extracted)
 
-`src/App.jsx` is **293 lines** (was 2019, was 1406 before Pass 5, was 839
-before this batch). Modals, SessionView, and the Home/Schedule/Progress
-tabs are out. Remaining inline: `NotesView`, `AssessmentsView`, and `TabBar`.
+`src/App.jsx` is **92 lines** (was 2019 at the start of the refactor).
+Every view and modal is in its own file. Only `TabBar` remains inline.
 
 ### File tree as it stands now
 
 ```
 src/
 ├── main.jsx
-├── App.jsx                     # 293 lines — NotesView + AssessmentsView + TabBar still inline
+├── App.jsx                     # 92 lines — TabBar inline, otherwise hooks setup + view switcher
 ├── styles.css                  # untouched
-├── data.js                     # 52-line re-export shim (kept temporarily so old imports work)
+├── data.js                     # 52-line re-export shim (delete in Pass 8 once nothing imports from it)
 ├── data/
 │   ├── sessions.js             # plan constants + date utilities
 │   ├── exercises.js            # exercise catalogues
@@ -44,29 +43,20 @@ src/
     ├── SessionView.jsx         # ← Pass 6 (was SessionDetail)
     ├── HomeTab.jsx             # ← Pass 7 (was HomeView)
     ├── ScheduleTab.jsx         # ← Pass 7 (was ScheduleView)
-    └── ProgressTab.jsx         # ← Pass 7 (was ProgressView + StackedBarChart + StackedBarLegend)
+    ├── ProgressTab.jsx         # ← Pass 7 (was ProgressView + StackedBarChart + StackedBarLegend)
+    ├── NotesTab.jsx            # ← Pass 7 (was NotesView)
+    └── AssessmentsTab.jsx      # ← Pass 7 (was AssessmentsView)
 ```
 
-### Functions still inline in App.jsx (these are the next targets)
+### Functions still inline in App.jsx
 
-| Line | Function           | Goes to                                |
-|-----:|--------------------|----------------------------------------|
-|   20 | `NotesView`        | Pass 7 — `components/NotesTab.jsx`     |
-|  111 | `AssessmentsView`  | Pass 7 — `components/AssessmentsTab.jsx` |
-|  217 | `TabBar`           | Pass 8 — `components/Navigation.jsx`   |
-
-After Pass 8, App.jsx should be ~100 lines (a hooks setup + view switcher),
-and `data.js` (the shim) gets deleted.
+| Line | Function | Goes to                              |
+|-----:|----------|--------------------------------------|
+|   16 | `TabBar` | Pass 8 — `components/Navigation.jsx` |
 
 ---
 
 ## Remaining passes
-
-Each pass = one commit. Each pass leaves the app fully working.
-
-### Pass 7 — Tab views (remaining)
-1. `NotesView`       → `NotesTab.jsx`
-2. `AssessmentsView` → `AssessmentsTab.jsx`
 
 ### Pass 8 — Navigation + cleanup
 Extract `TabBar` → `Navigation.jsx`. Trim App.jsx to ~100 lines. Delete the

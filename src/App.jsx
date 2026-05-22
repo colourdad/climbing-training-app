@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTrainingPlan } from './hooks/useTrainingPlan.js';
 import {
+  SKILL_CATEGORIES,
   SKILL_ORDER,
   getWeekSchedule,
   getWeekMeta,
   getAllSessions,
   getPlanPosition,
-  getDefaultPattern,
   todayISO,
   formatDateShort,
   formatDateLong,
@@ -16,153 +16,13 @@ import {
   addDays,
 } from './data.js';
 import { Icon } from './components/icons.jsx';
-import { SkillPill, StatusDot } from './components/SkillPill.jsx';
 import { DayRow } from './components/DayRow.jsx';
 import { SwipeDeleteRow, SortableList } from './components/SortableList.jsx';
-import { ExerciseCard, RatingRow } from './components/ExerciseCard.jsx';
-
-
-
-// ============================================================================
-// Inline exercise timer
-// ============================================================================
-function ExerciseTimer({ initialSec, label }) {
-  const [remaining, setRemaining] = useState(initialSec);
-  const [running, setRunning] = useState(false);
-  const tickRef = useRef(null);
-
-  useEffect(() => {
-    if (!running) return;
-    tickRef.current = setInterval(() => {
-      setRemaining(r => {
-        if (r <= 1) {
-          clearInterval(tickRef.current);
-          setRunning(false);
-          beep();
-          return 0;
-        }
-        return r - 1;
-      });
-    }, 1000);
-    return () => clearInterval(tickRef.current);
-  }, [running]);
-
-  const adjust = (delta) => {
-    setRemaining(r => Math.max(0, r + delta));
-  };
-
-  const reset = () => {
-    setRunning(false);
-    setRemaining(initialSec);
-  };
-
-  const start = () => {
-    if (remaining === 0) setRemaining(initialSec);
-    setRunning(true);
-  };
-
-  const pause = () => setRunning(false);
-
-  return (
-    <div className="timer">
-      <div className="timer-head">
-        <span className="timer-label">{label || 'Timer'}</span>
-        <span className="timer-default tiny muted">default {fmtSec(initialSec)}</span>
-      </div>
-      <div className="timer-display">
-        <button className="timer-adj" onClick={() => adjust(-10)} aria-label="-10 sec">−10</button>
-        <div className={`timer-time ${remaining === 0 && !running ? 'zero' : ''}`}>
-          {fmtSec(remaining)}
-        </div>
-        <button className="timer-adj" onClick={() => adjust(10)} aria-label="+10 sec">+10</button>
-      </div>
-      <div className="timer-ctrls">
-        {running ? (
-          <button className="timer-btn timer-pause" onClick={pause}>
-            <Icon.Pause style={{ width: 18, height: 18 }} /> Pause
-          </button>
-        ) : (
-          <button className="timer-btn timer-play" onClick={start}>
-            <Icon.Play style={{ width: 18, height: 18 }} /> {remaining === 0 ? 'Restart' : 'Start'}
-          </button>
-        )}
-        <button className="timer-btn timer-reset" onClick={reset} aria-label="Reset">
-          <Icon.Reset style={{ width: 16, height: 16 }} />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// End Session modal
-// ============================================================================
-function EndSessionModal({ day, store, existingLog, currentNotes, onClose, onDone }) {
-  const planned = day.session.plannedMinutes || 0;
-  const [minutes, setMinutes] = useState(existingLog?.actualMinutes ?? planned);
-  const [difficulty, setDifficulty] = useState(existingLog?.difficulty ?? 0);
-  const [effort, setEffort] = useState(existingLog?.effort ?? 0);
-  const [notes, setNotes] = useState(currentNotes ?? existingLog?.notes ?? '');
-
-  const save = () => {
-    store.endSession(day.weekNumber, day.dayIndex, {
-      actualMinutes: Number(minutes) || 0,
-      plannedMinutes: planned,
-      difficulty,
-      effort,
-      notes,
-    });
-    onDone();
-  };
-
-  return (
-    <div className="modal-bg" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
-        <h3>End session</h3>
-        <p>{day.session.name} · planned {planned} min</p>
-
-        <div className="end-row">
-          <div className="rating-label" style={{ marginBottom: 8 }}>
-            <span>Actual duration</span>
-            <span className="tiny muted">minutes</span>
-          </div>
-          <div className="duration-row">
-            <button className="dur-step" onClick={() => setMinutes(m => Math.max(0, Number(m) - 5))}>−5</button>
-            <input
-              type="number"
-              className="dur-input"
-              value={minutes}
-              onChange={e => setMinutes(e.target.value)}
-              inputMode="numeric"
-              min="0"
-            />
-            <button className="dur-step" onClick={() => setMinutes(m => Number(m) + 5)}>+5</button>
-          </div>
-        </div>
-
-        <RatingRow label="Difficulty" sub="how hard the session felt" value={difficulty} onChange={setDifficulty} />
-        <RatingRow label="Effort" sub="what you put in" value={effort} onChange={setEffort} />
-
-        <div className="end-row">
-          <div className="rating-label" style={{ marginBottom: 6 }}>
-            <span>Notes</span>
-            <span className="tiny muted">optional</span>
-          </div>
-          <textarea
-            className="notes-input"
-            placeholder="Anything to remember from this session…"
-            rows={3}
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-          />
-        </div>
-
-        <button className="modal-primary" onClick={save}>End session</button>
-        <button className="modal-close" onClick={onClose}>Cancel</button>
-      </div>
-    </div>
-  );
-}
+import { ExerciseCard } from './components/ExerciseCard.jsx';
+import { SettingsModal } from './components/SettingsModal.jsx';
+import { HeatmapCellModal } from './components/HeatmapCellModal.jsx';
+import { EndSessionModal } from './components/EndSessionModal.jsx';
+import { EditWeekModal } from './components/EditWeekModal.jsx';
 
 // ============================================================================
 // Session detail
@@ -342,162 +202,6 @@ function SessionDetail({ day, store, onBack }) {
           onDone={() => { setEndModalOpen(false); onBack(); }}
         />
       )}
-    </div>
-  );
-}
-
-// ============================================================================
-// Edit Week modal
-// ============================================================================
-// Session types the user can manually add via the EditWeekModal picker.
-// Order matches the priority a typical week reads top-to-bottom.
-const ADDABLE_SESSION_TYPES = ['limit', 'volume', 'tech', 'homeA', 'homeB'];
-
-function EditWeekModal({ weekNumber, store, onClose }) {
-  const cadence = store.cadenceFor(weekNumber);
-  const defaultPattern = useMemo(() => getDefaultPattern(weekNumber, cadence), [weekNumber, cadence]);
-  const currentPattern = store.patternFor(weekNumber) || defaultPattern;
-  const [pattern, setPattern] = useState(currentPattern);
-  const [localCadence, setLocalCadence] = useState(cadence);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const meta = getWeekMeta(weekNumber);
-
-  // Resolve the phase-aware display info for a candidate session type, using
-  // this week's phase context (so homeA shows "Fingerboard + Pulling Strength"
-  // in Phase 2, "Maintenance" in Phase 4, etc.).
-  const sessionInfoFor = (type) => {
-    const probe = getWeekSchedule(weekNumber, localCadence, [type, 'rest', 'rest', 'rest', 'rest', 'rest', 'rest']);
-    return probe[0].session;
-  };
-
-  const removeAt = (i) => {
-    const next = [...pattern];
-    next[i] = 'rest';
-    setPattern(next);
-  };
-
-  const addSession = (type) => {
-    const restIndex = pattern.indexOf('rest');
-    if (restIndex === -1) return; // no slot available
-    const next = [...pattern];
-    next[restIndex] = type;
-    setPattern(next);
-    setPickerOpen(false);
-  };
-
-  const applyCadence = (newCad) => {
-    setLocalCadence(newCad);
-    setPattern(getDefaultPattern(weekNumber, newCad));
-  };
-
-  const reset = () => {
-    setLocalCadence(store.state.cadence);
-    setPattern(getDefaultPattern(weekNumber, store.state.cadence));
-  };
-
-  const save = () => {
-    // Save cadence override only if differs from global
-    if (localCadence !== store.state.cadence) store.setWeekCadence(weekNumber, localCadence);
-    else store.setWeekCadence(weekNumber, null);
-    // Save pattern override only if differs from new default
-    const def = getDefaultPattern(weekNumber, localCadence);
-    const same = pattern.every((t, i) => t === def[i]);
-    store.setWeekPattern(weekNumber, same ? null : pattern);
-    onClose();
-  };
-
-  const phase = meta.phase;
-
-  return (
-    <div className="modal-bg" onClick={onClose}>
-      <div className="modal modal-tall" onClick={e => e.stopPropagation()}>
-        <h3>Week {weekNumber}</h3>
-        <p>Reorder days and choose climbing volume for this week only. Default and other weeks are untouched.</p>
-
-        <div className="modal-row">
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 14 }}>Climbing volume</div>
-            <div className="tiny muted" style={{ marginTop: 2 }}>
-              this week only
-            </div>
-          </div>
-          <div className="segmented">
-            <button className={localCadence === '3day' ? 'on' : ''} onClick={() => applyCadence('3day')}>3 climbs</button>
-            <button className={localCadence === '2day' ? 'on' : ''} onClick={() => applyCadence('2day')}>2 climbs</button>
-          </div>
-        </div>
-
-        <div className="section-head" style={{ marginBottom: 8 }}>
-          <h3 style={{ fontSize: 14 }}>Day order</h3>
-          <span className="section-sub tiny">hold ≡ to drag · swipe left to remove</span>
-        </div>
-
-        <SortableList
-            items={pattern}
-            keyFn={(type, idx) => `${idx}`}
-            onReorder={(newPattern) => setPattern(newPattern)}
-            renderItem={(type, displayIdx, onDragHandleTouch, isGhost) => {
-              const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-              const sessionInfo = sessionInfoFor(type);
-              const mockDay = {
-                dayLabel: DAYS[displayIdx],
-                sessionType: type,
-                session: sessionInfo,
-                weekNumber,
-                dayIndex: displayIdx,
-              };
-              return (
-                <SwipeDeleteRow
-                  onDelete={() => removeAt(displayIdx)}
-                  disabled={type === 'rest' || isGhost}
-                >
-                  <DayRow
-                    day={mockDay}
-                    isToday={false}
-                    status="planned"
-                    onClick={() => {}}
-                    editMode={true}
-                    onDragHandleTouch={onDragHandleTouch}
-                  />
-                </SwipeDeleteRow>
-              );
-            }}
-          />
-
-        {pickerOpen ? (
-          <div className="session-picker">
-            <div className="tiny muted" style={{ marginBottom: 8 }}>Add to next rest day</div>
-            <div className="session-picker-options">
-              {ADDABLE_SESSION_TYPES.map(t => {
-                const info = sessionInfoFor(t);
-                return (
-                  <button
-                    key={t}
-                    className="session-picker-option"
-                    onClick={() => addSession(t)}
-                  >
-                    <span className="session-picker-dot" style={{ background: info.accent }} />
-                    <span>{info.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <button className="modal-close" onClick={() => setPickerOpen(false)} style={{ marginTop: 8 }}>Cancel add</button>
-          </div>
-        ) : pattern.indexOf('rest') === -1 ? (
-          <div className="tiny muted" style={{ marginTop: 10, textAlign: 'center' }}>
-            No rest days left to replace.
-          </div>
-        ) : (
-          <button className="add-session-btn" onClick={() => setPickerOpen(true)}>
-            + Add session
-          </button>
-        )}
-
-        <button className="modal-close" onClick={reset} style={{ marginTop: 14 }}>Reset week to default</button>
-        <button className="modal-primary" onClick={save} style={{ marginTop: 8 }}>Save changes</button>
-        <button className="modal-close" onClick={onClose}>Cancel</button>
-      </div>
     </div>
   );
 }
@@ -1041,46 +745,6 @@ function ProgressView({ store, openSettings }) {
 }
 
 // ============================================================================
-// Heatmap cell detail modal — shown when a logged day is tapped.
-// ============================================================================
-function HeatmapCellModal({ cell, onClose }) {
-  const startDate = addDays(PLAN_START_DATE, (cell.weekNumber - 1) * 7 + cell.dayIndex);
-  const dateLabel = formatDateLong(startDate);
-
-  const renderRating = (value) => {
-    if (!value) return <span className="muted">—</span>;
-    return (
-      <span className="rating-pips">
-        {[1, 2, 3, 4, 5].map(n => (
-          <span key={n} className={`rating-pip ${value >= n ? 'on' : ''}`} />
-        ))}
-        <span className="tiny muted" style={{ marginLeft: 6 }}>{value}/5</span>
-      </span>
-    );
-  };
-
-  return (
-    <div className="modal-bg" onClick={onClose}>
-      <div className="modal modal-narrow" onClick={e => e.stopPropagation()}>
-        <h3 style={{ marginBottom: 4 }}>{cell.sessionName}</h3>
-        <div className="tiny muted" style={{ marginBottom: 16 }}>{dateLabel} · Week {cell.weekNumber}</div>
-
-        <div className="cell-detail-row">
-          <span className="cell-detail-label">Effort</span>
-          {renderRating(cell.effort)}
-        </div>
-        <div className="cell-detail-row">
-          <span className="cell-detail-label">Difficulty</span>
-          {renderRating(cell.difficulty)}
-        </div>
-
-        <button className="modal-close" onClick={onClose}>Close</button>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
 // Notes view — chronological diary of session notes.
 // ============================================================================
 function NotesView({ store, openSession, openSettings }) {
@@ -1272,53 +936,6 @@ function AssessmentsView({ store, openSettings }) {
             </div>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// Settings modal (global)
-// ============================================================================
-function SettingsModal({ store, onClose }) {
-  const customized = Object.keys(store.state.weekCadence).length + Object.keys(store.state.weekPattern).length;
-  return (
-    <div className="modal-bg" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
-        <h3>Settings</h3>
-        <p>Plan starts Mon 18 May 2026. Progress saves to this device only.</p>
-
-        <div className="modal-row">
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 14 }}>Default cadence</div>
-            <div className="tiny muted" style={{ marginTop: 2 }}>
-              {store.state.cadence === '3day' ? 'Mon · Wed · Fri climbs · Tue + Sat home' : 'Mon · Thu climbs · Tue + Fri home'}
-              {customized ? ` · ${customized} week${customized > 1 ? 's' : ''} customised` : ''}
-            </div>
-          </div>
-          <div className="segmented">
-            <button className={store.state.cadence === '3day' ? 'on' : ''} onClick={() => store.setGlobalCadence('3day')}>3 climbs</button>
-            <button className={store.state.cadence === '2day' ? 'on' : ''} onClick={() => store.setGlobalCadence('2day')}>2 climbs</button>
-          </div>
-        </div>
-
-        <div className="modal-hint tiny muted">
-          Tip: tap the pencil icon on any week to override cadence or reorder days for that week only.
-        </div>
-
-        <button
-          className="modal-danger"
-          onClick={() => {
-            if (confirm('Reset all progress and customisations? This cannot be undone.')) {
-              store.resetAll();
-              onClose();
-            }
-          }}
-        >
-          Reset all progress
-        </button>
-
-        <button className="modal-close" onClick={onClose}>Done</button>
       </div>
     </div>
   );

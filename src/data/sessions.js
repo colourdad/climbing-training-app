@@ -30,8 +30,8 @@ export function todayISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export function getPlanPosition(isoDate) {
-  const diff = daysBetween(PLAN_START_DATE, isoDate);
+export function getPlanPosition(isoDate, startDate = PLAN_START_DATE) {
+  const diff = daysBetween(startDate, isoDate);
   if (diff < 0) return { weekNumber: 1, dayIndex: 0, beforePlan: true };
   if (diff >= TOTAL_WEEKS * 7) return { weekNumber: TOTAL_WEEKS, dayIndex: 6, afterPlan: true };
   return { weekNumber: Math.floor(diff / 7) + 1, dayIndex: diff % 7 };

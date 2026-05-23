@@ -13,11 +13,11 @@ import { EditWeekModal } from './EditWeekModal.jsx';
 
 export function ScheduleTab({ store, openSession, openSettings }) {
   const today = todayISO();
-  const pos = getPlanPosition(today);
+  const pos = getPlanPosition(today, store.planStartDate);
   const [activeWeek, setActiveWeek] = useState(pos.weekNumber);
   const [editOpen, setEditOpen] = useState(false);
   const week = getWeekSchedule(activeWeek, store.cadenceFor(activeWeek), store.patternFor(activeWeek));
-  const meta = getWeekMeta(activeWeek);
+  const meta = getWeekMeta(activeWeek, store.planStartDate);
   const phase = meta.phase;
   const stripRef = useRef(null);
 
@@ -43,7 +43,7 @@ export function ScheduleTab({ store, openSession, openSettings }) {
 
       <div ref={stripRef} className="week-strip">
         {Array.from({ length: TOTAL_WEEKS }, (_, i) => i + 1).map(w => {
-          const m = getWeekMeta(w);
+          const m = getWeekMeta(w, store.planStartDate);
           const sessionsThisWeek = getWeekSchedule(w, store.cadenceFor(w), store.patternFor(w)).filter(d => d.sessionType !== 'rest');
           const done = sessionsThisWeek.filter(d => {
             const st = store.getSessionStatus(w, d.dayIndex, d.session.exercises);

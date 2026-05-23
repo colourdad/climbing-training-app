@@ -91,6 +91,22 @@ export function AssessmentsTab({ store, openSettings }) {
                       />
                     </label>
                   </div>
+                  {(() => {
+                    if (!v.baseline || !v.retest) return null;
+                    const b = parseFloat(v.baseline);
+                    const r = parseFloat(v.retest);
+                    if (!isFinite(b) || !isFinite(r)) return null;
+                    const delta = r - b;
+                    if (delta === 0) return <div className="tiny muted" style={{ marginTop: 8 }}>No change</div>;
+                    const pct = b !== 0 ? Math.round(Math.abs(delta / b) * 100) : null;
+                    const improved = delta > 0;
+                    return (
+                      <div style={{ marginTop: 8, fontWeight: 700, fontSize: 13, color: improved ? '#7A9E5F' : '#D97757' }}>
+                        {improved ? '+' : ''}{delta % 1 === 0 ? delta : delta.toFixed(1)} {a.unit}
+                        {pct !== null && <span style={{ fontWeight: 400, marginLeft: 6 }} className="tiny">({improved ? '+' : '-'}{pct}%)</span>}
+                      </div>
+                    );
+                  })()}
                   <label className="assessment-field" style={{ marginTop: 10, display: 'block' }}>
                     <div className="tiny muted" style={{ marginBottom: 4 }}>Notes (optional)</div>
                     <input

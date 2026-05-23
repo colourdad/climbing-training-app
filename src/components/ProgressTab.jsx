@@ -150,7 +150,7 @@ function StackedBarLegend() {
 // ----------------------------------------------------------------------------
 export function ProgressTab({ store, openSettings }) {
   const today = todayISO();
-  const pos = getPlanPosition(today);
+  const pos = getPlanPosition(today, store.planStartDate);
 
   const allSessions = useMemo(() => getAllSessions(store.cadenceFor, store.patternFor), [store.state]);
   // Partial sessions are counted as done — work completed is work completed.

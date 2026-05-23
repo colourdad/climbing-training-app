@@ -14,10 +14,10 @@ const isCompleted = (status) => status === 'done' || status === 'partial';
 
 export function HomeTab({ store, openSession, openSettings }) {
   const today = todayISO();
-  const pos = getPlanPosition(today);
+  const pos = getPlanPosition(today, store.planStartDate);
   const week = getWeekSchedule(pos.weekNumber, store.cadenceFor(pos.weekNumber), store.patternFor(pos.weekNumber));
   const todayDay = week[pos.dayIndex];
-  const meta = getWeekMeta(pos.weekNumber);
+  const meta = getWeekMeta(pos.weekNumber, store.planStartDate);
   const phase = meta.phase;
 
   const weekSessions = week.filter(d => d.sessionType !== 'rest');

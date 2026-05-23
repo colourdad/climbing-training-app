@@ -25,6 +25,7 @@ export function SessionView({ day, store, onBack }) {
   const [expanded, setExpanded] = useState({});
   const [endModalOpen, setEndModalOpen] = useState(false);
   const [notes, setNotes] = useState(log?.notes || '');
+  const [undoConfirm, setUndoConfirm] = useState(false);
 
   // Exercise ordering + skipping
   const customOrder = store.exerciseOrderFor(weekNumber, dayIndex);
@@ -147,7 +148,7 @@ export function SessionView({ day, store, onBack }) {
         <>
           <div className="section-head">
             <h3>Session notes</h3>
-            <span className="section-sub">saved to this device</span>
+            <span className="section-sub">auto-saved</span>
           </div>
           <textarea
             className="notes-input"
@@ -165,14 +166,14 @@ export function SessionView({ day, store, onBack }) {
                 <button className={`complete-btn ${status === 'done' ? 'done' : 'partial'}`} onClick={() => setEndModalOpen(true)}>
                   {status === 'done' ? '✓ Done · edit' : '— Partial · edit'}
                 </button>
-                <button
-                  className="complete-undo"
-                  onClick={() => {
-                    if (confirm('Mark this session as not ended?')) store.undoEndSession(weekNumber, dayIndex);
-                  }}
-                >
-                  Undo
-                </button>
+                {undoConfirm ? (
+                  <>
+                    <button className="complete-undo" style={{ color: 'var(--danger, #D97757)' }} onClick={() => { store.undoEndSession(weekNumber, dayIndex); setUndoConfirm(false); }}>Confirm</button>
+                    <button className="complete-undo" onClick={() => setUndoConfirm(false)}>Cancel</button>
+                  </>
+                ) : (
+                  <button className="complete-undo" onClick={() => setUndoConfirm(true)}>Undo</button>
+                )}
               </div>
             )}
           </div>

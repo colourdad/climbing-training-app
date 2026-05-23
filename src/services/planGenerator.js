@@ -108,12 +108,12 @@ export function getWeekSchedule(weekNumber, cadence = '3day', pattern = null) {
 // ----------------------------------------------------------------------------
 // Week metadata (phase, dates, flags, display tag).
 // ----------------------------------------------------------------------------
-export function getWeekMeta(weekNumber) {
+export function getWeekMeta(weekNumber, planStart = PLAN_START_DATE) {
   const phase = getPhase(weekNumber);
   const isDeload = phase.deloadWeek === weekNumber;
   const isDeepDeload = phase.deepDeloadWeek === weekNumber;
   const isTesting = phase.testingWeek === weekNumber;
-  const startDate = addDays(PLAN_START_DATE, (weekNumber - 1) * 7);
+  const startDate = addDays(planStart, (weekNumber - 1) * 7);
   const endDate = addDays(startDate, 6);
   let tag = null;
   if (isTesting) tag = 'Testing';

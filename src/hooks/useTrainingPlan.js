@@ -6,14 +6,16 @@
 
 import { useState, useEffect } from 'react';
 import { loadState, saveState } from '../services/migrations.js';
+import { PLAN_START_DATE } from '../data/sessions.js';
 import { useSupabaseSync } from './useSupabaseSync.js';
 
 export function useTrainingPlan() {
   const [state, setState] = useState(() => {
     const loaded = loadState();
     return {
-      cadence:            loaded.cadence            || '3day',
-      weekCadence:        loaded.weekCadence        || {},
+      planStartDate:      loaded.planStartDate       || PLAN_START_DATE,
+      cadence:            loaded.cadence             || '3day',
+      weekCadence:        loaded.weekCadence         || {},
       weekPattern:        loaded.weekPattern         || {},
       completedExercises: loaded.completedExercises  || {},
       sessionLog:         loaded.sessionLog          || {},
@@ -123,8 +125,11 @@ export function useTrainingPlan() {
     };
   });
 
-  const resetAll = () => setState({
-    cadence:            state.cadence,
+  const setPlanStartDate = (date) => setState(s => ({ ...s, planStartDate: date }));
+
+  const resetAll = () => setState(s => ({
+    planStartDate:      s.planStartDate,
+    cadence:            s.cadence,
     weekCadence:        {},
     weekPattern:        {},
     completedExercises: {},
@@ -132,7 +137,23 @@ export function useTrainingPlan() {
     assessments:        {},
     exerciseOrder:      {},
     exerciseSkipped:    {},
-  });
+  }));
+
+  const startNewCycle = () => {
+    const today = new Date();
+    const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    setState(s => ({
+      planStartDate:      iso,
+      cadence:            s.cadence,
+      weekCadence:        {},
+      weekPattern:        {},
+      completedExercises: {},
+      sessionLog:         {},
+      assessments:        {},
+      exerciseOrder:      {},
+      exerciseSkipped:    {},
+    }));
+  };
 
   // ---- exercise customisations (per-session order + skipped) ----
   const exerciseOrderFor   = (w, d) => state.exerciseOrder[`w${w}_d${d}`]   || null;
@@ -158,11 +179,14 @@ export function useTrainingPlan() {
     return { ...s, exerciseOrder: eo, exerciseSkipped: es };
   });
 
+  const planStartDate = state.planStartDate || PLAN_START_DATE;
+
   return {
     state,
     setState,
     syncStatus,
     cloudState,
+    planStartDate,
     cadenceFor,
     patternFor,
     isExerciseDone,
@@ -178,7 +202,9 @@ export function useTrainingPlan() {
     setGlobalCadence,
     assessmentFor,
     setAssessmentField,
+    setPlanStartDate,
     resetAll,
+    startNewCycle,
     exerciseOrderFor,
     exerciseSkippedFor,
     setExerciseOrder,

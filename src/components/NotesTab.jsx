@@ -7,7 +7,7 @@
 
 import { useMemo } from 'react';
 import { getWeekSchedule } from '../services/planGenerator.js';
-import { formatDateShort, PLAN_START_DATE, addDays } from '../data/sessions.js';
+import { formatDateShort, addDays } from '../data/sessions.js';
 import { Icon } from './icons.jsx';
 
 export function NotesTab({ store, openSession, openSettings }) {
@@ -25,7 +25,7 @@ export function NotesTab({ store, openSession, openSettings }) {
       const dayIndex = Number(m[2]);
       const day = getWeekSchedule(weekNumber, store.cadenceFor(weekNumber), store.patternFor(weekNumber))[dayIndex];
       if (!day) return;
-      const dateISO = addDays(PLAN_START_DATE, (weekNumber - 1) * 7 + dayIndex);
+      const dateISO = addDays(store.planStartDate, (weekNumber - 1) * 7 + dayIndex);
       out.push({
         key,
         weekNumber,

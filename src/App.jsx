@@ -46,6 +46,7 @@ export default function App() {
   const handleMigrate = () => {
     const local = loadState();
     store.setState({
+      planStartDate:      local.planStartDate      || null,
       cadence:            local.cadence            || '3day',
       weekCadence:        local.weekCadence        || {},
       weekPattern:        local.weekPattern        || {},

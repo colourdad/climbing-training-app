@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { createSupabaseClient } from '../services/supabase.js';
 
-const DEBOUNCE_MS = 1500;
+const SAVE_INTERVAL_MS = 10_000;
 
 // camelCase state → snake_case DB columns
 function stateToRow(userId, s) {
   return {
     user_id:             userId,
     schema_version:      4,
+    plan_start_date:     s.planStartDate        || null,
     cadence:             s.cadence,
     week_cadence:        s.weekCadence,
     week_pattern:        s.weekPattern,
@@ -23,6 +24,7 @@ function stateToRow(userId, s) {
 // DB row → camelCase state shape
 function rowToState(row) {
   return {
+    planStartDate:      row.plan_start_date     || null,
     cadence:            row.cadence             || '3day',
     weekCadence:        row.week_cadence        || {},
     weekPattern:        row.week_pattern        || {},
@@ -40,15 +42,25 @@ function rowToState(row) {
 //   'not-found' — signed in but no cloud row yet (first-ever sign-in)
 export function useSupabaseSync(state, setState, setSyncStatus) {
   const { userId, getToken, isSignedIn } = useAuth();
-  const clientRef   = useRef(null);
-  const debounceRef = useRef(null);
+  const clientRef    = useRef(null);
+  const dirtyRef     = useRef(false);
+  const stateRef     = useRef(state);
+  const cloudStateRef = useRef('checking');
   const [cloudState, setCloudState] = useState('checking');
+
+  // Keep stateRef current so the interval/visibilitychange handlers always
+  // read the latest state without needing to be re-registered.
+  stateRef.current = state;
+
+  // Mirror cloudState into a ref so flush() can read it synchronously.
+  const setCloudStateBoth = (v) => { cloudStateRef.current = v; setCloudState(v); };
 
   // (Re)build the Supabase client whenever auth state changes.
   useEffect(() => {
     if (!isSignedIn) {
       clientRef.current = null;
-      setCloudState('checking');
+      setCloudStateBoth('checking');
+      dirtyRef.current = false;
       return;
     }
     clientRef.current = createSupabaseClient(getToken);
@@ -77,38 +89,53 @@ export function useSupabaseSync(state, setState, setSyncStatus) {
           Object.keys(parsed.assessments).length > 0;
         if (hasRealData) {
           setState(parsed);
-          setCloudState('found');
+          setCloudStateBoth('found');
         } else {
-          // Cloud row exists but is empty — treat as not-found so local data
-          // can be offered for migration rather than being overwritten.
-          setCloudState('not-found');
+          setCloudStateBoth('not-found');
         }
       } else {
-        setCloudState('not-found');
+        setCloudStateBoth('not-found');
       }
       setSyncStatus('idle');
     })();
   }, [isSignedIn, userId, cloudState, setState, setSyncStatus]);
 
-  // Debounced save — skip until after the initial load completes.
+  // Mark dirty on every state mutation (skipped during initial load).
   useEffect(() => {
-    if (!isSignedIn || !clientRef.current || !userId) return;
-    if (cloudState === 'checking') return;
+    if (!isSignedIn || cloudState === 'checking') return;
+    dirtyRef.current = true;
+  }, [state, isSignedIn, cloudState]);
 
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
+  // Core flush — saves if dirty, clears the flag, updates sync status.
+  // Stable across renders: only depends on refs and setter callbacks.
+  useEffect(() => {
+    if (!isSignedIn || !userId) return;
+
+    const flush = async () => {
+      if (!dirtyRef.current || !clientRef.current || cloudStateRef.current === 'checking') return;
+      dirtyRef.current = false;
       setSyncStatus('saving');
       const { error } = await clientRef.current
         .from('training_data')
-        .upsert(stateToRow(userId, state), { onConflict: 'user_id' });
+        .upsert(stateToRow(userId, stateRef.current), { onConflict: 'user_id' });
       setSyncStatus(error ? 'error' : 'idle');
-      if (!error && cloudState === 'not-found') {
-        setCloudState('found');
+      if (!error && cloudStateRef.current === 'not-found') {
+        setCloudStateBoth('found');
       }
-    }, DEBOUNCE_MS);
+    };
 
-    return () => clearTimeout(debounceRef.current);
-  }, [state, isSignedIn, userId, cloudState, setSyncStatus]);
+    const interval = setInterval(flush, SAVE_INTERVAL_MS);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [isSignedIn, userId, setSyncStatus]);
 
   return { cloudState };
 }

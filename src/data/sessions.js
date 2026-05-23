@@ -16,7 +16,7 @@ export const TOTAL_WEEKS = 17;
 export function addDays(isoDate, n) {
   const d = new Date(isoDate + 'T00:00:00');
   d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 export function daysBetween(a, b) {

@@ -7,7 +7,7 @@
 import React, { useMemo, useState } from 'react';
 import { SKILL_CATEGORIES, SKILL_ORDER } from '../data/phases.js';
 import { TOTAL_WEEKS, getPlanPosition, todayISO } from '../data/sessions.js';
-import { getWeekSchedule, getAllSessions } from '../services/planGenerator.js';
+import { getWeekSchedule, getAllSessions, getWeekMeta } from '../services/planGenerator.js';
 import { Icon } from './icons.jsx';
 import { HeatmapCellModal } from './HeatmapCellModal.jsx';
 
@@ -190,6 +190,7 @@ function StackedBarLegend() {
 export function ProgressTab({ store, openSettings }) {
   const today = todayISO();
   const pos = getPlanPosition(today, store.planStartDate);
+  const meta = getWeekMeta(pos.weekNumber, store.planStartDate);
 
   const allSessions = useMemo(() => getAllSessions(store.cadenceFor, store.patternFor), [store.state]);
   // Partial sessions are counted as done — work completed is work completed.
@@ -278,7 +279,7 @@ export function ProgressTab({ store, openSettings }) {
 
   const INFRA_IDS = new Set(['warmup', 'tb2_warmup', 'shake_out', 'cooldown', 'rest_1', 'rest_2', 'rest_note']);
 
-  const { totalTrainingMinutes, minutesByCategory } = useMemo(() => {
+  const { totalTrainingMinutes, minutesByCategory, completedInPeriod } = useMemo(() => {
     const now = new Date();
     const cutoff = trainingFilter === 'week'
       ? new Date(now - 7 * 24 * 60 * 60 * 1000)
@@ -289,10 +290,12 @@ export function ProgressTab({ store, openSettings }) {
     const catMins = {};
     SKILL_ORDER.forEach(c => { catMins[c] = 0; });
     let total = 0;
+    let completedSessions = 0;
 
     Object.entries(store.state.sessionLog || {}).forEach(([key, log]) => {
       if (!log || !log.endedAt || !log.actualMinutes) return;
       if (cutoff && new Date(log.endedAt) < cutoff) return;
+      completedSessions++;
       total += log.actualMinutes;
 
       const match = key.match(/^w(\d+)_d(\d+)$/);
@@ -329,7 +332,7 @@ export function ProgressTab({ store, openSettings }) {
     });
 
     SKILL_ORDER.forEach(c => { catMins[c] = Math.round(catMins[c]); });
-    return { totalTrainingMinutes: total, minutesByCategory: catMins };
+    return { totalTrainingMinutes: total, minutesByCategory: catMins, completedInPeriod: completedSessions };
   }, [store.state.sessionLog, trainingFilter, allSessions]);
 
   const fmtTraining = (mins) => {
@@ -358,10 +361,12 @@ export function ProgressTab({ store, openSettings }) {
           <div className="stat-label">Done</div>
           <div className="stat-value">{completedCount}</div>
           <div className="stat-sub">of {totalSessions}</div>
+          <div className="stat-sub">sessions</div>
         </div>
         <div className="stat">
           <div className="stat-label">Avg effort</div>
           <div className="stat-value">{effortSampleCount ? avgEffort.toFixed(1) : '—'}</div>
+          <div className="stat-sub stat-denom">/ 5</div>
           <div className="stat-sub">{effortSampleCount ? `over ${effortSampleCount} session${effortSampleCount === 1 ? '' : 's'}` : 'no sessions logged'}</div>
         </div>
       </div>
@@ -370,7 +375,7 @@ export function ProgressTab({ store, openSettings }) {
         <div className="total-training-header">
           <span className="total-training-label">Total training</span>
           <div className="total-training-filters">
-            {[['week', 'Last week'], ['month', 'Last month'], ['all', 'All time']].map(([v, label]) => (
+            {[['week', 'Week'], ['month', 'Month'], ['all', 'All time']].map(([v, label]) => (
               <button
                 key={v}
                 className={`tt-filter-pill${trainingFilter === v ? ' active' : ''}`}
@@ -382,14 +387,20 @@ export function ProgressTab({ store, openSettings }) {
           </div>
         </div>
         <div className="total-training-body">
-          <DonutChart minutesByCategory={minutesByCategory} size={72} />
-          <div className="total-training-value">{fmtTraining(totalTrainingMinutes)}</div>
+          <DonutChart minutesByCategory={minutesByCategory} size={80} />
+          <div className="total-training-text">
+            <div className="total-training-value">{fmtTraining(totalTrainingMinutes)}</div>
+            {completedInPeriod > 0 && (
+              <div className="total-training-sub">over {completedInPeriod} session{completedInPeriod === 1 ? '' : 's'}</div>
+            )}
+            <div className="total-training-week">↑ Wk {pos.weekNumber} of {TOTAL_WEEKS}</div>
+          </div>
         </div>
       </div>
 
       <div className="section-head">
         <h3>Weekly load</h3>
-        <span className="section-sub">hours trained · stacked by skill</span>
+        <span className="section-sub section-sub-upper">hours · stacked by skill</span>
       </div>
       <div className="card">
         <StackedBarChart minutesByWeek={minutesByWeek} currentWeek={pos.weekNumber} />
@@ -397,8 +408,8 @@ export function ProgressTab({ store, openSettings }) {
       </div>
 
       <div className="section-head">
-        <h3>17-week heatmap</h3>
-        <span className="section-sub">M · T · W · T · F · S · S</span>
+        <h3>17-week plan</h3>
+        <span className="section-sub section-sub-upper">Wk {pos.weekNumber} · {meta.phase.name}</span>
       </div>
       <div className="card">
         <div className="heatmap">

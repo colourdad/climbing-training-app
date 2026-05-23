@@ -1,16 +1,82 @@
 // ============================================================================
-// HomeTab — the default landing view. Today's hero card, this-week stats,
-// phase progress, and the current week's day list.
+// HomeTab — Block Hero redesign (Direction B).
+// Full-bleed coloured hero: coral for session days, moss for rest days.
 // ============================================================================
 
-import { useMemo } from 'react';
-import { getPlanPosition, todayISO, formatDateLong, formatDateShort } from '../data/sessions.js';
-import { getWeekSchedule, getWeekMeta, getAllSessions } from '../services/planGenerator.js';
-import { Icon } from './icons.jsx';
-import { DayRow } from './DayRow.jsx';
+import { getPlanPosition, todayISO } from '../data/sessions.js';
+import { getWeekSchedule, getWeekMeta } from '../services/planGenerator.js';
 
-// Partial sessions count toward "done" totals — completed work is completed work.
-const isCompleted = (status) => status === 'done' || status === 'partial';
+// Chips per session type — editorial labels derived from session id
+const SESSION_CHIPS = {
+  limit:     ['Power', 'Project', 'Wall'],
+  volume:    ['Endurance', 'Volume', 'Wall'],
+  homeA:     ['Prehab', 'Pulling', 'Home'],
+  homeB:     ['Core', 'Mobility', 'Home'],
+  tech:      ['Technique', 'Wall'],
+  testing:   ['Assessment', 'Wall'],
+  lightHome: ['Deload', 'Home'],
+};
+
+// Button label for the session CTA
+function ctaLabel(status) {
+  if (status === 'done')    return 'View session';
+  if (status === 'partial') return 'Continue';
+  return 'Start session';
+}
+
+// "SAT 23 MAY" from an ISO date string
+function heroDateLabel(isoDate) {
+  const d = new Date(isoDate + 'T00:00:00');
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
+}
+
+// "17–23 MAY" week range
+function weekRangeLabel(startISO, endISO) {
+  const s = new Date(startISO + 'T00:00:00');
+  const e = new Date(endISO + 'T00:00:00');
+  const monthStr = e.toLocaleDateString('en-GB', { month: 'short' }).toUpperCase();
+  return `${s.getDate()}–${e.getDate()} ${monthStr}`;
+}
+
+// Inline check SVG for done rows
+function CheckIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 12 12">
+      <path d="M2 6 L5 9 L10 3" stroke="#FFF" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function HomeDayRow({ day, isToday, status, onClick }) {
+  const isRest = day.sessionType === 'rest';
+  const stripeColor = isRest ? 'var(--moss)' : 'var(--accent)';
+  const isDone = status === 'done';
+
+  const rowClass = [
+    'home-day-row',
+    isToday  ? 'is-today' : '',
+    isRest   ? 'is-rest'  : '',
+  ].filter(Boolean).join(' ');
+
+  return (
+    <button className={rowClass} onClick={isRest ? undefined : onClick} disabled={isRest}>
+      <div className="home-day-stripe" style={{ background: stripeColor }} />
+      <div className="home-day-dow">{day.dayLabel}</div>
+      <div className="home-day-body">
+        <div className="home-day-name">{day.session.name}</div>
+        <div className="home-day-meta">
+          {isRest ? 'Recovery' : `${day.session.duration} · ${day.session.location}`}
+        </div>
+      </div>
+      <div className="home-day-trailing">
+        {isToday && <span className="home-today-pill">Today</span>}
+        {!isToday && isDone && (
+          <div className="home-day-check"><CheckIcon /></div>
+        )}
+      </div>
+    </button>
+  );
+}
 
 export function HomeTab({ store, openSession, openSettings }) {
   const today = todayISO();
@@ -20,109 +86,117 @@ export function HomeTab({ store, openSession, openSettings }) {
   const meta = getWeekMeta(pos.weekNumber, store.planStartDate);
   const phase = meta.phase;
 
-  const weekSessions = week.filter(d => d.sessionType !== 'rest');
-  const weekDone = weekSessions.filter(d => isCompleted(store.getSessionStatus(d.weekNumber, d.dayIndex, d.session.exercises))).length;
-
-  const allSessions = useMemo(() => getAllSessions(store.cadenceFor, store.patternFor), [store.state]);
-  const totalDone = allSessions.filter(s => s.sessionType !== 'rest' && isCompleted(store.getSessionStatus(s.weekNumber, s.dayIndex, s.session.exercises))).length;
-  const totalNonRest = allSessions.filter(s => s.sessionType !== 'rest').length;
-  const overallPct = totalNonRest ? Math.round((totalDone / totalNonRest) * 100) : 0;
-
-  const todayStatus = todayDay && todayDay.sessionType !== 'rest'
-    ? store.getSessionStatus(todayDay.weekNumber, todayDay.dayIndex, todayDay.session.exercises) : null;
   const isRestDay = todayDay?.sessionType === 'rest';
 
-  return (
-    <div className="view">
-      <div className="top">
-        <div>
-          <div className="top-sub">Week {pos.weekNumber} of 16 · {phase.name}</div>
-          <h1>Send</h1>
-        </div>
-        <button className="cog" onClick={openSettings} aria-label="Settings">
-          <Icon.Cog style={{ width: 18, height: 18 }} />
-        </button>
-      </div>
+  const todayStatus = todayDay && !isRestDay
+    ? store.getSessionStatus(todayDay.weekNumber, todayDay.dayIndex, todayDay.session.exercises)
+    : null;
 
-      <div className="hero" style={{ '--accent': isRestDay ? '#94a3b8' : todayDay.session.accent }}>
-        <div className="hero-eyebrow">
-          <span className="dot" style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor' }} />
-          Today · {formatDateLong(today)}
+  // Hero colours
+  const heroColor     = isRestDay ? 'var(--moss)'      : 'var(--accent)';
+  const heroColorDark = isRestDay ? 'var(--moss-dark)'  : 'var(--accent-dark)';
+
+  // Phase progress within current phase
+  const phaseWeekNum   = pos.weekNumber - phase.weeks[0] + 1;
+  const phaseTotalWeeks = phase.weeks.length;
+  const phasePct       = Math.round((phaseWeekNum / phaseTotalWeeks) * 100);
+
+  // Hero content
+  const todayLabel = heroDateLabel(today);
+  const heroTitle  = isRestDay ? 'Rest.' : (todayDay?.session.name ?? 'Session') + '.';
+  const heroSubtitle = isRestDay
+    ? 'Active recovery — walk, mobility, gentle stretching.'
+    : todayDay ? `${todayDay.session.duration} · ${todayDay.session.location}` : '';
+  const chips = !isRestDay && todayDay ? (SESSION_CHIPS[todayDay.session.id] ?? []) : [];
+
+  const weekRange = weekRangeLabel(meta.startDate, meta.endDate);
+
+  return (
+    <div className="home-view">
+      {/* Full-bleed coloured background */}
+      <div className="home-hero-block" style={{ background: heroColor }} />
+      <div
+        className="home-hero-overlay"
+        style={{ background: `linear-gradient(180deg, transparent 0%, color-mix(in srgb, ${heroColorDark} 20%, transparent) 100%)` }}
+      />
+
+      <div className="home-content">
+        {/* Masthead */}
+        <div className="home-masthead">
+          <div>
+            <div className="home-masthead-eyebrow">
+              Week {pos.weekNumber} of 16 · {phase.name}
+            </div>
+            <div className="home-wordmark">Send</div>
+          </div>
+          <button className="home-hero-gear" onClick={openSettings} aria-label="Settings">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 0 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06A2 2 0 1 1 4.11 16.92l.06-.06A1.7 1.7 0 0 0 4.51 15 1.7 1.7 0 0 0 2.95 14H3a2 2 0 0 1 0-4h.09A1.7 1.7 0 0 0 4.65 8.89a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.88.34H9a1.7 1.7 0 0 0 1-1.56V3a2 2 0 0 1 4 0v.09a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.88V9a1.7 1.7 0 0 0 1.56 1H21a2 2 0 0 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/>
+            </svg>
+          </button>
         </div>
-        <h2>{todayDay ? todayDay.session.name : 'Rest day'}</h2>
-        <div className="hero-meta">
-          {todayDay && todayDay.sessionType !== 'rest'
-            ? `${todayDay.session.duration} · ${todayDay.session.location}`
-            : 'Active recovery: walk, mobility, gentle stretching.'}
-        </div>
-        <div className="hero-bottom">
-          {todayDay && todayDay.sessionType !== 'rest' && (
+
+        {/* Today block */}
+        <div className="home-today">
+          <div className="home-today-eyebrow">
+            <span className="home-today-dot" />
+            Today · {todayLabel}
+          </div>
+          <h2 className={`home-today-headline ${isRestDay ? 'rest' : 'session'}`}>
+            {heroTitle}
+          </h2>
+          <p className="home-today-subtitle">{heroSubtitle}</p>
+
+          {chips.length > 0 && (
+            <div className="home-chips">
+              {chips.map(c => <span key={c} className="home-chip">{c}</span>)}
+            </div>
+          )}
+
+          {!isRestDay && todayDay && (
             <button
-              className={`hero-cta ${todayStatus === 'done' ? 'muted' : ''}`}
+              className="home-start-btn"
+              style={{ color: heroColor }}
               onClick={() => openSession(todayDay)}
             >
-              {todayStatus === 'done' ? 'View session' : todayStatus === 'partial' ? 'Continue' : 'Open session'}
+              {ctaLabel(todayStatus)}
             </button>
           )}
         </div>
-      </div>
 
-      <div className="stats">
-        <div className="stat">
-          <div className="stat-label">This week</div>
-          <div className="stat-value">{weekDone}/{weekSessions.length}</div>
-          <div className="stat-sub">sessions done</div>
-        </div>
-        <div className="stat">
-          <div className="stat-label">Phase</div>
-          <div className="stat-value" style={{ fontSize: 17 }}>{phase.name}</div>
-          <div className="stat-sub">{phase.limitGrade} limit</div>
-        </div>
-        <div className="stat">
-          <div className="stat-label">Plan</div>
-          <div className="stat-value">{overallPct}%</div>
-          <div className="stat-sub">complete</div>
-        </div>
-      </div>
-
-      <div className="card" style={{ marginTop: 14, '--accent': phase.accent }}>
-        <div className="card-row">
-          <div>
-            <div className="tiny muted" style={{ textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              Phase {phase.id}
+        {/* Phase progress row */}
+        <div className="home-phase-row">
+          <div className="home-phase-info">
+            <div className="home-phase-label">
+              <span style={{ color: 'var(--accent)' }}>{phase.name}</span>
+              <span style={{ color: 'var(--text-3)', fontWeight: 600 }}> · {phaseWeekNum} of {phaseTotalWeeks} weeks</span>
             </div>
-            <div style={{ fontWeight: 800, fontSize: 17, marginTop: 2 }}>{phase.name}</div>
+            <div className="home-phase-bar-track">
+              <div className="home-phase-bar-fill" style={{ width: `${phasePct}%` }} />
+            </div>
           </div>
-          <span className="phase-pill" style={{ background: `${phase.accent}24`, color: phase.accent }}>
-            Wk {pos.weekNumber}/{phase.weeks[phase.weeks.length - 1]}
-          </span>
+          <div className="home-phase-pct">{phasePct}%</div>
         </div>
-        <div style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 10 }}>{phase.focus}</div>
-        <div className="phase-progress">
-          <div className="phase-progress-bar" style={{
-            width: `${Math.min(100, ((pos.weekNumber - phase.weeks[0]) / phase.weeks.length) * 100 + (1 / phase.weeks.length) * 100)}%`,
-            background: phase.accent,
-          }} />
-        </div>
-      </div>
 
-      <div className="section-head">
-        <h3>This week</h3>
-        <span className="section-sub">
-          {formatDateShort(meta.startDate)} – {formatDateShort(meta.endDate)}
-          {meta.tag ? ` · ${meta.tag}` : ''}
-        </span>
-      </div>
-      <div className="day-list">
-        {week.map((d, i) => (
-          <DayRow
-            key={i}
-            day={d}
-            isToday={i === pos.dayIndex}
-            status={d.sessionType !== 'rest' ? store.getSessionStatus(d.weekNumber, d.dayIndex, d.session.exercises) : 'planned'}
-            onClick={() => openSession(d)}
-          />
-        ))}
+        {/* This week */}
+        <div className="home-week-head">
+          <h3>This week</h3>
+          <span className="home-week-date">{weekRange}</span>
+        </div>
+        <div className="home-day-list">
+          {week.map((d, i) => (
+            <HomeDayRow
+              key={i}
+              day={d}
+              isToday={i === pos.dayIndex}
+              status={d.sessionType !== 'rest'
+                ? store.getSessionStatus(d.weekNumber, d.dayIndex, d.session.exercises)
+                : 'planned'}
+              onClick={() => openSession(d)}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

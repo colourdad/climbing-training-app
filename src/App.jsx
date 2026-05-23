@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { getPlanPosition, todayISO } from './data/sessions.js';
 import { useTrainingPlan } from './hooks/useTrainingPlan.js';
 import { getWeekSchedule } from './services/planGenerator.js';
 import { loadState } from './services/migrations.js';
@@ -26,6 +27,8 @@ export default function App() {
   const [selectedDay, setSelectedDay] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showMigration, setShowMigration] = useState(false);
+  const [scheduleWeek, setScheduleWeek] = useState(null);
+  const [scheduleViewMode, setScheduleViewMode] = useState('month');
 
   // Tab the user was on when they opened a session — restored on back.
   const prevViewRef = useRef('home');
@@ -94,7 +97,15 @@ export default function App() {
         ) : view === 'home' ? (
           <HomeTab store={store} openSession={openSession} openSettings={openSettings} />
         ) : view === 'schedule' ? (
-          <ScheduleTab store={store} openSession={openSession} openSettings={openSettings} />
+          <ScheduleTab
+            store={store}
+            openSession={openSession}
+            openSettings={openSettings}
+            activeWeek={scheduleWeek}
+            setActiveWeek={setScheduleWeek}
+            viewMode={scheduleViewMode}
+            setViewMode={setScheduleViewMode}
+          />
         ) : view === 'progress' ? (
           <ProgressTab store={store} openSettings={openSettings} />
         ) : view === 'assess' ? (

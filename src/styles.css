@@ -275,6 +275,64 @@ a { color: inherit; }
   margin-top: 4px;
 }
 
+/* ----- Total training widget --------------------------------------------- */
+
+.total-training-card {
+  margin-top: 14px;
+}
+
+.total-training-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.total-training-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-2);
+  font-weight: 700;
+}
+
+.total-training-filters {
+  display: flex;
+  gap: 4px;
+}
+
+.tt-filter-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.tt-filter-pill.active {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  color: var(--accent);
+}
+
+.total-training-body {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.total-training-value {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
 /* ----- Section header ---------------------------------------------------- */
 
 .section-head {
@@ -327,6 +385,226 @@ a { color: inherit; }
 }
 
 /* ----- Week selector strip ---------------------------------------------- */
+
+/* ----- View mode toggle -------------------------------------------------- */
+
+.view-mode-toggle {
+  display: flex;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.view-mode-toggle button {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  border-radius: 16px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.view-mode-toggle button.active {
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* ----- Month calendar ---------------------------------------------------- */
+
+.month-calendar {
+  margin-top: 14px;
+}
+
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+
+.month-nav-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.month-nav-btn {
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text-2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.month-nav-btn:active {
+  background: var(--bg-2);
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+
+.month-dow {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  padding: 4px 0 6px;
+}
+
+.month-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 2px 6px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.month-cell.empty {
+  pointer-events: none;
+}
+
+.month-cell.inert {
+  cursor: default;
+}
+
+.month-cell.past {
+  pointer-events: none;
+}
+
+.month-cell.past .month-date-num {
+  color: var(--text-3);
+}
+
+.month-cell.past .month-pip {
+  opacity: 0.35;
+}
+
+.month-cell:disabled {
+  opacity: 0.35;
+}
+
+.month-cell.sel {
+  background: var(--bg-2);
+}
+
+.month-date-num {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.month-cell.today .month-date-num {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+
+.month-pip {
+  display: block;
+  flex-shrink: 0;
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+/* Session card */
+.month-session-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-top: 14px;
+  box-shadow: var(--shadow-card);
+}
+
+.month-session-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.month-session-date-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-2);
+}
+
+.month-session-duration {
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.month-session-name {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+
+.month-session-muscles {
+  font-size: 12px;
+  color: var(--text-2);
+  margin-bottom: 14px;
+}
+
+.month-session-cta {
+  width: 100%;
+  padding: 13px;
+  border-radius: 999px;
+  border: none;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.month-session-cta:active { opacity: 0.85; transform: scale(0.98); }
+
+/* Legend */
+.month-legend {
+  margin-top: 14px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.month-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ----- Week strip -------------------------------------------------------- */
 
 .week-strip {
   display: flex;

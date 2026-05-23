@@ -12,43 +12,97 @@ import { Icon } from './icons.jsx';
 import { HeatmapCellModal } from './HeatmapCellModal.jsx';
 
 // ----------------------------------------------------------------------------
-// Stacked bar chart — one bar per week, stacked by skill category.
-// Y-axis auto-scales to the tallest bar. Legend below in HTML so it wraps.
+// Donut chart — training minutes broken down by skill category.
 // ----------------------------------------------------------------------------
-function StackedBarChart({ countsByWeek, currentWeek }) {
-  // countsByWeek: array of 16, each = { [skillId]: count }
+function DonutChart({ minutesByCategory, size = 72 }) {
+  const cx = size / 2;
+  const cy = size / 2;
+  const outerR = size / 2 - 3;
+  const innerR = outerR - 11;
+  const total = SKILL_ORDER.reduce((s, c) => s + (minutesByCategory[c] || 0), 0);
+
+  if (total === 0) {
+    return (
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle cx={cx} cy={cy} r={(outerR + innerR) / 2} fill="none"
+          stroke="var(--border)" strokeWidth={outerR - innerR} />
+      </svg>
+    );
+  }
+
+  const segments = [];
+  let startAngle = -Math.PI / 2;
+
+  SKILL_ORDER.forEach(c => {
+    const v = minutesByCategory[c] || 0;
+    if (v === 0) return;
+    const angle = (v / total) * 2 * Math.PI;
+    const endAngle = startAngle + angle;
+    const largeArc = angle > Math.PI ? 1 : 0;
+    const x1 = cx + outerR * Math.cos(startAngle);
+    const y1 = cy + outerR * Math.sin(startAngle);
+    const x2 = cx + outerR * Math.cos(endAngle);
+    const y2 = cy + outerR * Math.sin(endAngle);
+    const ix1 = cx + innerR * Math.cos(endAngle);
+    const iy1 = cy + innerR * Math.sin(endAngle);
+    const ix2 = cx + innerR * Math.cos(startAngle);
+    const iy2 = cy + innerR * Math.sin(startAngle);
+    const d = `M ${x1} ${y1} A ${outerR} ${outerR} 0 ${largeArc} 1 ${x2} ${y2} L ${ix1} ${iy1} A ${innerR} ${innerR} 0 ${largeArc} 0 ${ix2} ${iy2} Z`;
+    segments.push(<path key={c} d={d} fill={SKILL_CATEGORIES[c].color} />);
+    startAngle = endAngle;
+  });
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {segments}
+    </svg>
+  );
+}
+
+// ----------------------------------------------------------------------------
+// Stacked bar chart — one bar per week, stacked by skill category.
+// Y-axis auto-scales to the tallest bar. X-axis grows with currentWeek.
+// ----------------------------------------------------------------------------
+function StackedBarChart({ minutesByWeek, currentWeek }) {
   const cats = SKILL_ORDER;
   const width = 340;
   const height = 220;
-  const padding = { top: 10, right: 6, bottom: 28, left: 24 };
+  const padding = { top: 10, right: 6, bottom: 28, left: 30 };
   const chartW = width - padding.left - padding.right;
   const chartH = height - padding.top - padding.bottom;
-  const numBars = 16;
-  const barGap = 2;
+  const numBars = Math.max(currentWeek, 3);
+  const visibleCounts = minutesByWeek.slice(0, numBars);
+  const barGap = numBars > 8 ? 2 : 3;
   const barW = (chartW - barGap * (numBars - 1)) / numBars;
 
-  // Per-week totals (used for y-scale + above-bar labels)
-  const totals = countsByWeek.map(w => cats.reduce((s, c) => s + (w[c] || 0), 0));
-  const rawMax = Math.max(1, ...totals);
+  // Totals in minutes; y-axis displayed in hours.
+  const totals = visibleCounts.map(w => cats.reduce((s, c) => s + (w[c] || 0), 0));
+  const rawMaxMins = Math.max(1, ...totals);
 
-  // Pick a "nice" y-axis max that grows with progress.
-  const niceMax = (() => {
-    if (rawMax <= 2) return 2;
-    if (rawMax <= 5) return 5;
-    if (rawMax <= 10) return 10;
-    if (rawMax <= 20) return 20;
-    if (rawMax <= 30) return 30;
-    if (rawMax <= 50) return Math.ceil(rawMax / 5) * 5;
-    return Math.ceil(rawMax / 10) * 10;
+  // Nice y-axis max in minutes, rounded to clean hour/half-hour values.
+  const niceMaxMins = (() => {
+    const h = rawMaxMins / 60;
+    if (h <= 0.5) return 30;
+    if (h <= 1)   return 60;
+    if (h <= 2)   return 120;
+    if (h <= 3)   return 180;
+    if (h <= 5)   return 300;
+    if (h <= 8)   return 480;
+    return Math.ceil(h / 2) * 120;
   })();
 
-  const tickCount = niceMax <= 5 ? niceMax : 4;
-  const ticks = Array.from({ length: tickCount + 1 }, (_, i) => {
-    const v = (niceMax / tickCount) * i;
-    return Math.round(v * 10) / 10;
-  });
+  const tickCount = 4;
+  const ticks = Array.from({ length: tickCount + 1 }, (_, i) =>
+    (niceMaxMins / tickCount) * i
+  );
 
-  const yFor = (v) => padding.top + chartH - (v / niceMax) * chartH;
+  const fmtTick = (mins) => {
+    if (mins === 0) return '0';
+    const h = mins / 60;
+    return h % 1 === 0 ? `${h}h` : `${h.toFixed(1)}h`;
+  };
+
+  const yFor = (mins) => padding.top + chartH - (mins / niceMaxMins) * chartH;
 
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
@@ -57,56 +111,41 @@ function StackedBarChart({ countsByWeek, currentWeek }) {
         <g key={t}>
           <line x1={padding.left} x2={width - padding.right} y1={yFor(t)} y2={yFor(t)} stroke="#25252b" strokeDasharray={t === 0 ? '' : '2,3'} />
           <text x={padding.left - 4} y={yFor(t) + 3} fill="#6b675f" fontSize="9" textAnchor="end">
-            {Number.isInteger(t) ? t : t.toFixed(1)}
+            {fmtTick(t)}
           </text>
         </g>
       ))}
 
-      {/* bars (one per week) */}
-      {countsByWeek.map((counts, w) => {
+      {/* bars (one per visible week) */}
+      {visibleCounts.map((counts, w) => {
         const x = padding.left + w * (barW + barGap);
         let yCursor = yFor(0);
         const isCurrent = (w + 1) === currentWeek;
+        const showLabel = numBars <= 8 ? true : (w + 1) % 2 === 1;
         return (
           <g key={w}>
-            {/* current-week background highlight */}
             {isCurrent && totals[w] === 0 && (
               <rect x={x - 0.5} y={padding.top} width={barW + 1} height={chartH}
                 fill="rgba(194,168,120,0.06)" rx="2" />
             )}
-
-            {/* stacked segments */}
             {cats.map(cat => {
               const v = counts[cat] || 0;
               if (v === 0) return null;
-              const h = (v / niceMax) * chartH;
+              const h = (v / niceMaxMins) * chartH;
               const y = yCursor - h;
               yCursor = y;
               return (
-                <rect
-                  key={cat}
-                  x={x}
-                  y={y}
-                  width={barW}
-                  height={h}
-                  fill={SKILL_CATEGORIES[cat].color}
-                />
+                <rect key={cat} x={x} y={y} width={barW} height={h}
+                  fill={SKILL_CATEGORIES[cat].color} />
               );
             })}
-
-            {/* current-week indicator dot above bar */}
-            {isCurrent && (
-              <circle cx={x + barW / 2} cy={padding.top + 4} r="2" fill="#c2a878" />
-            )}
-
-            {/* x-axis label — show every other week to avoid spillover */}
-            {((w + 1) % 2 === 1) && (
+            {showLabel && (
               <text
                 x={x + barW / 2}
                 y={height - padding.bottom + 12}
                 fill={isCurrent ? '#c2a878' : '#6b675f'}
-                fontSize="9"
-                fontWeight={isCurrent ? '700' : '500'}
+                fontSize={isCurrent ? '10' : '9'}
+                fontWeight={isCurrent ? '800' : '500'}
                 textAnchor="middle"
               >
                 {w + 1}
@@ -116,7 +155,7 @@ function StackedBarChart({ countsByWeek, currentWeek }) {
         );
       })}
 
-      {/* x-axis sub-label */}
+      {/* x-axis label */}
       <text
         x={(padding.left + (width - padding.right)) / 2}
         y={height - 4}
@@ -126,7 +165,7 @@ function StackedBarChart({ countsByWeek, currentWeek }) {
         textAnchor="middle"
         style={{ textTransform: 'uppercase', letterSpacing: '0.1em' }}
       >
-        Week · 1 – 16
+        Week
       </text>
     </svg>
   );
@@ -176,31 +215,37 @@ export function ProgressTab({ store, openSettings }) {
     return { avgEffort: n ? sum / n : 0, effortSampleCount: n };
   }, [store.state]);
 
-  // Stacked bar chart counts: one entry per week (1–TOTAL_WEEKS), each is {skillId: count}.
-  // Each ticked exercise contributes 1, scaled by actualMinutes/plannedMinutes if the session was logged.
-  const countsByWeek = useMemo(() => {
+  // Weekly bar chart: actual minutes per category per week, distributed by work-exercise proportion.
+  // Consistent with donut — uses actualMinutes from session log, excludes infra exercises.
+  const minutesByWeek = useMemo(() => {
     const weeks = Array.from({ length: TOTAL_WEEKS }, () => {
       const obj = {};
       SKILL_ORDER.forEach(s => { obj[s] = 0; });
       return obj;
     });
-    allSessions.forEach(s => {
-      if (s.sessionType === 'rest') return;
-      const log = store.sessionLogFor(s.weekNumber, s.dayIndex);
-      const ratio = log && log.endedAt && log.plannedMinutes > 0
-        ? Math.max(0.1, Math.min(2, (log.actualMinutes || 0) / log.plannedMinutes))
-        : 1;
-      s.session.exercises.forEach(ex => {
-        if (store.isExerciseDone(s.weekNumber, s.dayIndex, ex.id)) {
-          weeks[s.weekNumber - 1][ex.category] += ratio;
-        }
+    const infraIds = new Set(['warmup', 'tb2_warmup', 'shake_out', 'cooldown', 'rest_1', 'rest_2', 'rest_note']);
+    Object.entries(store.state.sessionLog || {}).forEach(([key, log]) => {
+      if (!log || !log.endedAt || !log.actualMinutes) return;
+      const match = key.match(/^w(\d+)_d(\d+)$/);
+      if (!match) return;
+      const w = parseInt(match[1]);
+      const d = parseInt(match[2]);
+      if (w < 1 || w > TOTAL_WEEKS) return;
+      const sessionEntry = allSessions.find(s => s.weekNumber === w && s.dayIndex === d);
+      if (!sessionEntry || sessionEntry.sessionType === 'rest') return;
+      const workExs = sessionEntry.session.exercises.filter(ex => !infraIds.has(ex.id));
+      const catCounts = {};
+      SKILL_ORDER.forEach(c => { catCounts[c] = 0; });
+      let totalDone = 0;
+      workExs.forEach(ex => {
+        if (store.isExerciseDone(w, d, ex.id)) { catCounts[ex.category]++; totalDone++; }
       });
-    });
-    weeks.forEach(w => {
-      SKILL_ORDER.forEach(s => { w[s] = Math.round(w[s] * 10) / 10; });
+      if (totalDone === 0) { workExs.forEach(ex => { catCounts[ex.category]++; totalDone++; }); }
+      if (totalDone === 0) return;
+      SKILL_ORDER.forEach(c => { weeks[w - 1][c] += (catCounts[c] / totalDone) * log.actualMinutes; });
     });
     return weeks;
-  }, [store.state]);
+  }, [store.state, allSessions]);
 
   // Heatmap
   const heatmap = useMemo(() => {
@@ -229,6 +274,72 @@ export function ProgressTab({ store, openSettings }) {
   }, [store.state, pos.weekNumber, pos.dayIndex]);
 
   const [cellModal, setCellModal] = useState(null);
+  const [trainingFilter, setTrainingFilter] = useState('all');
+
+  const INFRA_IDS = new Set(['warmup', 'tb2_warmup', 'shake_out', 'cooldown', 'rest_1', 'rest_2', 'rest_note']);
+
+  const { totalTrainingMinutes, minutesByCategory } = useMemo(() => {
+    const now = new Date();
+    const cutoff = trainingFilter === 'week'
+      ? new Date(now - 7 * 24 * 60 * 60 * 1000)
+      : trainingFilter === 'month'
+        ? new Date(now - 30 * 24 * 60 * 60 * 1000)
+        : null;
+
+    const catMins = {};
+    SKILL_ORDER.forEach(c => { catMins[c] = 0; });
+    let total = 0;
+
+    Object.entries(store.state.sessionLog || {}).forEach(([key, log]) => {
+      if (!log || !log.endedAt || !log.actualMinutes) return;
+      if (cutoff && new Date(log.endedAt) < cutoff) return;
+      total += log.actualMinutes;
+
+      const match = key.match(/^w(\d+)_d(\d+)$/);
+      if (!match) return;
+      const w = parseInt(match[1]);
+      const d = parseInt(match[2]);
+
+      const sessionEntry = allSessions.find(s => s.weekNumber === w && s.dayIndex === d);
+      if (!sessionEntry || sessionEntry.sessionType === 'rest') return;
+
+      const workExercises = sessionEntry.session.exercises.filter(ex => !INFRA_IDS.has(ex.id));
+
+      const catCounts = {};
+      SKILL_ORDER.forEach(c => { catCounts[c] = 0; });
+      let totalDone = 0;
+      workExercises.forEach(ex => {
+        if (store.isExerciseDone(w, d, ex.id)) {
+          catCounts[ex.category] = (catCounts[ex.category] || 0) + 1;
+          totalDone++;
+        }
+      });
+
+      if (totalDone === 0) {
+        workExercises.forEach(ex => {
+          catCounts[ex.category] = (catCounts[ex.category] || 0) + 1;
+          totalDone++;
+        });
+      }
+
+      if (totalDone === 0) return;
+      SKILL_ORDER.forEach(c => {
+        catMins[c] += (catCounts[c] / totalDone) * log.actualMinutes;
+      });
+    });
+
+    SKILL_ORDER.forEach(c => { catMins[c] = Math.round(catMins[c]); });
+    return { totalTrainingMinutes: total, minutesByCategory: catMins };
+  }, [store.state.sessionLog, trainingFilter, allSessions]);
+
+  const fmtTraining = (mins) => {
+    if (mins === 0) return '0m';
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (h === 0) return `${m}m`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}m`;
+  };
 
   return (
     <div className="view">
@@ -255,12 +366,33 @@ export function ProgressTab({ store, openSettings }) {
         </div>
       </div>
 
+      <div className="total-training-card card">
+        <div className="total-training-header">
+          <span className="total-training-label">Total training</span>
+          <div className="total-training-filters">
+            {[['week', 'Last week'], ['month', 'Last month'], ['all', 'All time']].map(([v, label]) => (
+              <button
+                key={v}
+                className={`tt-filter-pill${trainingFilter === v ? ' active' : ''}`}
+                onClick={() => setTrainingFilter(v)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="total-training-body">
+          <DonutChart minutesByCategory={minutesByCategory} size={72} />
+          <div className="total-training-value">{fmtTraining(totalTrainingMinutes)}</div>
+        </div>
+      </div>
+
       <div className="section-head">
         <h3>Weekly load</h3>
-        <span className="section-sub">stacked by skill · scale grows</span>
+        <span className="section-sub">hours trained · stacked by skill</span>
       </div>
       <div className="card">
-        <StackedBarChart countsByWeek={countsByWeek} currentWeek={pos.weekNumber} />
+        <StackedBarChart minutesByWeek={minutesByWeek} currentWeek={pos.weekNumber} />
         <StackedBarLegend />
       </div>
 

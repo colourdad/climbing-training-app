@@ -38,33 +38,114 @@ function fmtSec(s) {
 }
 
 // ----------------------------------------------------------------------------
-// ExerciseTimer — countdown / countup with ±10 s nudge and beep on zero
+// ExerciseTimer — prep countdown → main countdown, background-safe via wall clock
 // ----------------------------------------------------------------------------
+const PREP_SEC = 3;
+
 function ExerciseTimer({ initialSec, label }) {
+  // phase: 'idle' | 'prep' | 'running' | 'paused' | 'done'
+  const [phase,     setPhase]     = useState('idle');
   const [remaining, setRemaining] = useState(initialSec);
-  const [running,   setRunning]   = useState(false);
-  const tickRef = useRef(null);
+  const [prepLeft,  setPrepLeft]  = useState(PREP_SEC);
 
+  // Wall-clock end time for the current phase — survives background suspension
+  const endTimeRef    = useRef(null);
+  const remainingRef  = useRef(initialSec); // kept in sync with remaining state
+  const tickRef       = useRef(null);
+
+  useEffect(() => { remainingRef.current = remaining; }, [remaining]);
+
+  function stopTick() { clearInterval(tickRef.current); tickRef.current = null; }
+
+  // Prep phase tick
   useEffect(() => {
-    if (!running) return;
+    if (phase !== 'prep') return;
+    endTimeRef.current = Date.now() + PREP_SEC * 1000;
+    setPrepLeft(PREP_SEC);
+    stopTick();
     tickRef.current = setInterval(() => {
-      setRemaining(r => {
-        if (r <= 1) {
-          clearInterval(tickRef.current);
-          setRunning(false);
-          beep();
-          return 0;
-        }
-        return r - 1;
-      });
-    }, 1000);
-    return () => clearInterval(tickRef.current);
-  }, [running]);
+      const left = Math.ceil((endTimeRef.current - Date.now()) / 1000);
+      if (left <= 0) {
+        stopTick();
+        setPhase('running');
+      } else {
+        setPrepLeft(left);
+      }
+    }, 100);
+    return stopTick;
+  }, [phase]);
 
-  const adjust = (delta) => setRemaining(r => Math.max(0, r + delta));
-  const reset  = ()      => { setRunning(false); setRemaining(initialSec); };
-  const start  = ()      => { if (remaining === 0) setRemaining(initialSec); setRunning(true); };
-  const pause  = ()      => setRunning(false);
+  // Main running phase tick
+  useEffect(() => {
+    if (phase !== 'running') return;
+    endTimeRef.current = Date.now() + remainingRef.current * 1000;
+    stopTick();
+    tickRef.current = setInterval(() => {
+      const left = Math.ceil((endTimeRef.current - Date.now()) / 1000);
+      if (left <= 0) {
+        stopTick();
+        setRemaining(0);
+        setPhase('done');
+        beep();
+      } else {
+        setRemaining(left);
+      }
+    }, 100);
+    return stopTick;
+  }, [phase]);
+
+  // Resync from wall clock when tab regains focus
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState !== 'visible' || endTimeRef.current == null) return;
+      const left = Math.ceil((endTimeRef.current - Date.now()) / 1000);
+      if (phase === 'prep') {
+        if (left <= 0) { stopTick(); setPhase('running'); }
+        else setPrepLeft(left);
+      } else if (phase === 'running') {
+        if (left <= 0) { stopTick(); setRemaining(0); setPhase('done'); beep(); }
+        else setRemaining(left);
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [phase]);
+
+  const adjust = (delta) => {
+    if (phase === 'running' && endTimeRef.current != null) {
+      endTimeRef.current += delta * 1000;
+    }
+    setRemaining(r => Math.max(0, r + delta));
+  };
+
+  const reset = () => {
+    stopTick();
+    endTimeRef.current = null;
+    setPhase('idle');
+    setRemaining(initialSec);
+    setPrepLeft(PREP_SEC);
+  };
+
+  const start = () => {
+    if (phase === 'paused') {
+      setPhase('running'); // resume without re-prep
+    } else {
+      if (phase === 'done') { setRemaining(initialSec); remainingRef.current = initialSec; }
+      setPhase('prep');
+    }
+  };
+
+  const pause = () => {
+    stopTick();
+    endTimeRef.current = null;
+    setPhase(phase === 'prep' ? 'idle' : 'paused');
+    if (phase === 'prep') setPrepLeft(PREP_SEC);
+  };
+
+  const isActive = phase === 'prep' || phase === 'running';
+  const isDone   = phase === 'done';
+
+  const startLabel = isDone ? 'Restart' : phase === 'paused' ? 'Resume' : 'Start';
 
   return (
     <div className="timer">
@@ -72,21 +153,30 @@ function ExerciseTimer({ initialSec, label }) {
         <span className="timer-label">{label || 'Timer'}</span>
         <span className="timer-default tiny muted">default {fmtSec(initialSec)}</span>
       </div>
-      <div className="timer-display">
-        <button className="timer-adj" onClick={() => adjust(-10)} aria-label="-10 sec">−10</button>
-        <div className={`timer-time ${remaining === 0 && !running ? 'zero' : ''}`}>
-          {fmtSec(remaining)}
+
+      {phase === 'prep' ? (
+        <div className="timer-display timer-display-prep">
+          <div className="timer-prep-box">
+            <span className="timer-prep-label">Get ready</span>
+            <span className="timer-prep-count">{prepLeft}</span>
+          </div>
         </div>
-        <button className="timer-adj" onClick={() => adjust(10)} aria-label="+10 sec">+10</button>
-      </div>
+      ) : (
+        <div className="timer-display">
+          <button className="timer-adj" onClick={() => adjust(-10)} aria-label="-10 sec">−10</button>
+          <div className={`timer-time ${isDone ? 'zero' : ''}`}>{fmtSec(remaining)}</div>
+          <button className="timer-adj" onClick={() => adjust(10)} aria-label="+10 sec">+10</button>
+        </div>
+      )}
+
       <div className="timer-ctrls">
-        {running ? (
+        {isActive ? (
           <button className="timer-btn timer-pause" onClick={pause}>
             <Icon.Pause style={{ width: 18, height: 18 }} /> Pause
           </button>
         ) : (
           <button className="timer-btn timer-play" onClick={start}>
-            <Icon.Play style={{ width: 18, height: 18 }} /> {remaining === 0 ? 'Restart' : 'Start'}
+            <Icon.Play style={{ width: 18, height: 18 }} /> {startLabel}
           </button>
         )}
         <button className="timer-btn timer-reset" onClick={reset} aria-label="Reset">

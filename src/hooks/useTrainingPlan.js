@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { loadState, saveState } from '../services/migrations.js';
+import { useSupabaseSync } from './useSupabaseSync.js';
 
 export function useTrainingPlan() {
   const [state, setState] = useState(() => {
@@ -22,7 +23,12 @@ export function useTrainingPlan() {
     };
   });
 
+  // localStorage — always written synchronously (offline cache)
   useEffect(() => { saveState(state); }, [state]);
+
+  // Cloud sync
+  const [syncStatus, setSyncStatus] = useState('idle');
+  const { cloudState } = useSupabaseSync(state, setState, setSyncStatus);
 
   // ---- cadence helpers ----
   // Per-week cadence: explicit override → global cadence
@@ -154,6 +160,9 @@ export function useTrainingPlan() {
 
   return {
     state,
+    setState,
+    syncStatus,
+    cloudState,
     cadenceFor,
     patternFor,
     isExerciseDone,

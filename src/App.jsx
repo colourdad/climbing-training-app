@@ -1,6 +1,10 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useTrainingPlan } from './hooks/useTrainingPlan.js';
 import { getWeekSchedule } from './services/planGenerator.js';
+import { loadState } from './services/migrations.js';
+import { AuthGuard } from './components/AuthGuard.jsx';
+import { MigrationPrompt } from './components/MigrationPrompt.jsx';
+import { SyncStatusIndicator } from './components/SyncStatusIndicator.jsx';
 import { SettingsModal } from './components/SettingsModal.jsx';
 import { SessionView } from './components/SessionView.jsx';
 import { HomeTab } from './components/HomeTab.jsx';
@@ -21,9 +25,38 @@ export default function App() {
   const [view, setView] = useState('home');
   const [selectedDay, setSelectedDay] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showMigration, setShowMigration] = useState(false);
 
   // Tab the user was on when they opened a session — restored on back.
   const prevViewRef = useRef('home');
+
+  // Show migration prompt once when signed in but no cloud row exists and
+  // there is existing data in localStorage.
+  useEffect(() => {
+    if (store.cloudState !== 'not-found') return;
+    const local = loadState();
+    const hasData = local && (
+      Object.keys(local.completedExercises || {}).length > 0 ||
+      Object.keys(local.sessionLog || {}).length > 0 ||
+      Object.keys(local.assessments || {}).length > 0
+    );
+    if (hasData) setShowMigration(true);
+  }, [store.cloudState]);
+
+  const handleMigrate = () => {
+    const local = loadState();
+    store.setState({
+      cadence:            local.cadence            || '3day',
+      weekCadence:        local.weekCadence        || {},
+      weekPattern:        local.weekPattern        || {},
+      completedExercises: local.completedExercises || {},
+      sessionLog:         local.sessionLog         || {},
+      assessments:        local.assessments        || {},
+      exerciseOrder:      local.exerciseOrder      || {},
+      exerciseSkipped:    local.exerciseSkipped    || {},
+    });
+    setShowMigration(false);
+  };
 
   const openSession = (day) => { prevViewRef.current = view; setSelectedDay(day); };
   const closeSession = () => { setView(prevViewRef.current); setSelectedDay(null); };
@@ -46,24 +79,33 @@ export default function App() {
   }
 
   return (
-    <div className="app">
-      {dayForRender ? (
-        <SessionView day={dayForRender} store={store} onBack={closeSession} />
-      ) : view === 'home' ? (
-        <HomeTab store={store} openSession={openSession} openSettings={openSettings} />
-      ) : view === 'schedule' ? (
-        <ScheduleTab store={store} openSession={openSession} openSettings={openSettings} />
-      ) : view === 'progress' ? (
-        <ProgressTab store={store} openSettings={openSettings} />
-      ) : view === 'assess' ? (
-        <AssessmentsTab store={store} openSettings={openSettings} />
-      ) : (
-        <NotesTab store={store} openSession={openSession} openSettings={openSettings} />
+    <AuthGuard>
+      {showMigration && (
+        <MigrationPrompt
+          onMigrate={handleMigrate}
+          onSkip={() => setShowMigration(false)}
+        />
       )}
+      <div className="app">
+        <SyncStatusIndicator status={store.syncStatus} />
+        {dayForRender ? (
+          <SessionView day={dayForRender} store={store} onBack={closeSession} />
+        ) : view === 'home' ? (
+          <HomeTab store={store} openSession={openSession} openSettings={openSettings} />
+        ) : view === 'schedule' ? (
+          <ScheduleTab store={store} openSession={openSession} openSettings={openSettings} />
+        ) : view === 'progress' ? (
+          <ProgressTab store={store} openSettings={openSettings} />
+        ) : view === 'assess' ? (
+          <AssessmentsTab store={store} openSettings={openSettings} />
+        ) : (
+          <NotesTab store={store} openSession={openSession} openSettings={openSettings} />
+        )}
 
-      <Navigation view={view} setView={handleSetView} />
+        <Navigation view={view} setView={handleSetView} />
 
-      {settingsOpen && <SettingsModal store={store} onClose={() => setSettingsOpen(false)} />}
-    </div>
+        {settingsOpen && <SettingsModal store={store} onClose={() => setSettingsOpen(false)} />}
+      </div>
+    </AuthGuard>
   );
 }

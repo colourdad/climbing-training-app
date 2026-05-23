@@ -1,9 +1,12 @@
+import { UserButton, useClerk } from '@clerk/clerk-react';
+
 // ============================================================================
 // SettingsModal — global preferences modal opened from the cog icon.
 // Owns the default-cadence toggle and the "Reset all progress" action.
 // ============================================================================
 
 export function SettingsModal({ store, onClose }) {
+  const { signOut } = useClerk();
   const customized = Object.keys(store.state.weekCadence).length + Object.keys(store.state.weekPattern).length;
   return (
     <div className="modal-bg" onClick={onClose}>
@@ -40,6 +43,19 @@ export function SettingsModal({ store, onClose }) {
         >
           Reset all progress
         </button>
+
+        <div className="modal-row" style={{ marginTop: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <UserButton />
+            <span className="tiny muted">Signed in</span>
+          </div>
+          <button
+            className="modal-secondary"
+            onClick={() => { signOut(); onClose(); }}
+          >
+            Sign out
+          </button>
+        </div>
 
         <button className="modal-close" onClick={onClose}>Done</button>
       </div>

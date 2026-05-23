@@ -132,6 +132,17 @@ a { color: inherit; }
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.top-sub-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--moss);
+  flex: 0 0 7px;
 }
 
 .cog {
@@ -270,10 +281,16 @@ a { color: inherit; }
   margin-bottom: 6px;
 }
 .stat-value {
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 800;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   line-height: 1;
+}
+.stat-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: 2px;
 }
 .stat-sub {
   font-size: 11px;
@@ -281,10 +298,10 @@ a { color: inherit; }
   margin-top: 2px;
 }
 .stat-denom {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--text-2);
-  margin-top: 1px;
+  color: var(--text-3);
+  letter-spacing: 0;
 }
 
 /* ----- Total training widget --------------------------------------------- */
@@ -315,21 +332,21 @@ a { color: inherit; }
 }
 
 .tt-filter-pill {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  padding: 3px 8px;
+  padding: 4px 10px;
   border-radius: 20px;
-  border: 1px solid var(--border);
+  border: none;
   background: transparent;
-  color: var(--text-2);
+  color: var(--text-3);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 
 .tt-filter-pill.active {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
-  color: var(--accent);
+  background: var(--bg-2);
+  color: var(--text);
+  border: 1px solid var(--border);
 }
 
 .total-training-body {
@@ -345,9 +362,9 @@ a { color: inherit; }
 }
 
 .total-training-value {
-  font-size: 34px;
+  font-size: 38px;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   line-height: 1;
 }
 
@@ -1916,27 +1933,22 @@ a { color: inherit; }
   padding-bottom: 24px;
 }
 
-/* Full-bleed coloured hero block */
-.home-hero-block,
-.home-hero-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 360px;
+/* Hero wrapper — flows with content, clips diagonally at bottom */
+.home-hero-wrapper {
+  position: relative;
+  padding: calc(var(--safe-top) + 20px) 20px 52px;
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 22px), 0 100%);
-}
-.home-hero-block {
   transition: background 200ms ease-out;
 }
 .home-hero-overlay {
+  position: absolute;
+  inset: 0;
   pointer-events: none;
 }
 
-/* Content layer above the hero */
+/* Content below the hero */
 .home-content {
-  position: relative;
-  padding: calc(var(--safe-top) + 60px) 20px 0;
+  padding: 0 20px;
   display: flex;
   flex-direction: column;
 }
@@ -1979,7 +1991,6 @@ a { color: inherit; }
 .home-today {
   color: #fff;
   margin-top: 6px;
-  min-height: 232px;
   display: flex;
   flex-direction: column;
 }
@@ -2049,20 +2060,22 @@ a { color: inherit; }
 }
 .home-start-btn:active { transform: scale(0.96); opacity: 0.85; }
 
-/* Phase progress row */
+/* Phase progress row — matches schedule tab design */
 .home-phase-row {
-  margin-top: 14px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  margin-top: 24px;
+  margin-bottom: 4px;
   padding: 0 2px;
 }
-.home-phase-info { flex: 1; }
+.home-phase-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
 .home-phase-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 4px;
 }
 .home-phase-bar-track {
   height: 6px;
@@ -2077,9 +2090,9 @@ a { color: inherit; }
   border-radius: 999px;
 }
 .home-phase-pct {
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--text);
+  font-size: 11px;
+  font-family: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  color: var(--text-3);
   flex: 0 0 auto;
 }
 
@@ -2088,7 +2101,7 @@ a { color: inherit; }
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-top: 4px;
+  margin-top: 20px;
   margin-bottom: 10px;
 }
 .home-week-head h3 {

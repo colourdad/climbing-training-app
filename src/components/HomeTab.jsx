@@ -113,14 +113,13 @@ export function HomeTab({ store, openSession, openSettings }) {
 
   return (
     <div className="home-view">
-      {/* Full-bleed coloured background */}
-      <div className="home-hero-block" style={{ background: heroColor }} />
-      <div
-        className="home-hero-overlay"
-        style={{ background: `linear-gradient(180deg, transparent 0%, color-mix(in srgb, ${heroColorDark} 20%, transparent) 100%)` }}
-      />
+      {/* Hero — natural height, clips diagonally at bottom */}
+      <div className="home-hero-wrapper" style={{ background: heroColor }}>
+        <div
+          className="home-hero-overlay"
+          style={{ background: `linear-gradient(180deg, transparent 0%, color-mix(in srgb, ${heroColorDark} 20%, transparent) 100%)` }}
+        />
 
-      <div className="home-content">
         {/* Masthead */}
         <div className="home-masthead">
           <div>
@@ -164,19 +163,22 @@ export function HomeTab({ store, openSession, openSettings }) {
             </button>
           )}
         </div>
+      </div>
 
-        {/* Phase progress row */}
+      {/* Below-hero content */}
+      <div className="home-content">
+        {/* Phase progress row — matches schedule tab design */}
         <div className="home-phase-row">
-          <div className="home-phase-info">
+          <div className="home-phase-top">
             <div className="home-phase-label">
               <span style={{ color: 'var(--accent)' }}>{phase.name}</span>
               <span style={{ color: 'var(--text-3)', fontWeight: 600 }}> · {phaseWeekNum} of {phaseTotalWeeks} weeks</span>
             </div>
-            <div className="home-phase-bar-track">
-              <div className="home-phase-bar-fill" style={{ width: `${phasePct}%` }} />
-            </div>
+            <span className="home-phase-pct">{phasePct}%</span>
           </div>
-          <div className="home-phase-pct">{phasePct}%</div>
+          <div className="home-phase-bar-track">
+            <div className="home-phase-bar-fill" style={{ width: `${phasePct}%` }} />
+          </div>
         </div>
 
         {/* This week */}

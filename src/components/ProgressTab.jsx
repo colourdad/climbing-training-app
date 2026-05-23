@@ -63,23 +63,38 @@ function DonutChart({ minutesByCategory, size = 72 }) {
 // Stacked bar chart — one bar per week, stacked by skill category.
 // Y-axis auto-scales to the tallest bar. X-axis grows with currentWeek.
 // ----------------------------------------------------------------------------
+// Path for a rect with rounded top corners only.
+function topRoundedRect(x, y, w, h, r) {
+  const safeR = Math.min(r, w / 2, h / 2);
+  return [
+    `M ${x + safeR},${y}`,
+    `H ${x + w - safeR}`,
+    `A ${safeR},${safeR} 0 0,1 ${x + w},${y + safeR}`,
+    `V ${y + h}`,
+    `H ${x}`,
+    `V ${y + safeR}`,
+    `A ${safeR},${safeR} 0 0,1 ${x + safeR},${y}`,
+    'Z',
+  ].join(' ');
+}
+
 function StackedBarChart({ minutesByWeek, currentWeek }) {
   const cats = SKILL_ORDER;
   const width = 340;
   const height = 220;
   const padding = { top: 10, right: 6, bottom: 28, left: 30 };
-  const chartW = width - padding.left - padding.right;
+  // Leave extra space before the first bar so it doesn't hug the y-axis corner.
+  const barStartOffset = 10;
+  const chartW = width - padding.left - padding.right - barStartOffset;
   const chartH = height - padding.top - padding.bottom;
   const numBars = Math.max(currentWeek, 3);
   const visibleCounts = minutesByWeek.slice(0, numBars);
-  const barGap = numBars > 8 ? 2 : 3;
+  const barGap = numBars > 8 ? 2 : 4;
   const barW = (chartW - barGap * (numBars - 1)) / numBars;
 
-  // Totals in minutes; y-axis displayed in hours.
   const totals = visibleCounts.map(w => cats.reduce((s, c) => s + (w[c] || 0), 0));
   const rawMaxMins = Math.max(1, ...totals);
 
-  // Nice y-axis max in minutes, rounded to clean hour/half-hour values.
   const niceMaxMins = (() => {
     const h = rawMaxMins / 60;
     if (h <= 0.5) return 30;
@@ -109,7 +124,8 @@ function StackedBarChart({ minutesByWeek, currentWeek }) {
       {/* gridlines + y-axis labels */}
       {ticks.map(t => (
         <g key={t}>
-          <line x1={padding.left} x2={width - padding.right} y1={yFor(t)} y2={yFor(t)} stroke="#25252b" strokeDasharray={t === 0 ? '' : '2,3'} />
+          <line x1={padding.left} x2={width - padding.right} y1={yFor(t)} y2={yFor(t)}
+            stroke="var(--border-2)" strokeDasharray={t === 0 ? '' : '3,4'} strokeWidth="0.8" />
           <text x={padding.left - 4} y={yFor(t) + 3} fill="#6b675f" fontSize="9" textAnchor="end">
             {fmtTick(t)}
           </text>
@@ -118,10 +134,15 @@ function StackedBarChart({ minutesByWeek, currentWeek }) {
 
       {/* bars (one per visible week) */}
       {visibleCounts.map((counts, w) => {
-        const x = padding.left + w * (barW + barGap);
+        const x = padding.left + barStartOffset + w * (barW + barGap);
         let yCursor = yFor(0);
         const isCurrent = (w + 1) === currentWeek;
         const showLabel = numBars <= 8 ? true : (w + 1) % 2 === 1;
+
+        // Find the topmost non-zero category so we can round its top.
+        const nonZeroCats = cats.filter(c => (counts[c] || 0) > 0);
+        const topCat = nonZeroCats[nonZeroCats.length - 1];
+
         return (
           <g key={w}>
             {isCurrent && totals[w] === 0 && (
@@ -134,10 +155,10 @@ function StackedBarChart({ minutesByWeek, currentWeek }) {
               const h = (v / niceMaxMins) * chartH;
               const y = yCursor - h;
               yCursor = y;
-              return (
-                <rect key={cat} x={x} y={y} width={barW} height={h}
-                  fill={SKILL_CATEGORIES[cat].color} />
-              );
+              const isTop = cat === topCat;
+              return isTop
+                ? <path key={cat} d={topRoundedRect(x, y, barW, h, 3)} fill={SKILL_CATEGORIES[cat].color} />
+                : <rect key={cat} x={x} y={y} width={barW} height={h} fill={SKILL_CATEGORIES[cat].color} />;
             })}
             {showLabel && (
               <text
@@ -157,7 +178,7 @@ function StackedBarChart({ minutesByWeek, currentWeek }) {
 
       {/* x-axis label */}
       <text
-        x={(padding.left + (width - padding.right)) / 2}
+        x={(padding.left + barStartOffset + (width - padding.right)) / 2}
         y={height - 4}
         fill="#6b675f"
         fontSize="8.5"
@@ -348,7 +369,7 @@ export function ProgressTab({ store, openSettings }) {
     <div className="view">
       <div className="top">
         <div>
-          <div className="top-sub">Real-time</div>
+          <div className="top-sub"><span className="top-sub-dot" />Real-time</div>
           <h1>Progress</h1>
         </div>
         <button className="cog" onClick={openSettings} aria-label="Settings">
@@ -365,8 +386,10 @@ export function ProgressTab({ store, openSettings }) {
         </div>
         <div className="stat">
           <div className="stat-label">Avg effort</div>
-          <div className="stat-value">{effortSampleCount ? avgEffort.toFixed(1) : '—'}</div>
-          <div className="stat-sub stat-denom">/ 5</div>
+          <div className="stat-value-row">
+            <span className="stat-value">{effortSampleCount ? avgEffort.toFixed(1) : '—'}</span>
+            <span className="stat-denom">/ 5</span>
+          </div>
           <div className="stat-sub">{effortSampleCount ? `over ${effortSampleCount} session${effortSampleCount === 1 ? '' : 's'}` : 'no sessions logged'}</div>
         </div>
       </div>
@@ -387,31 +410,30 @@ export function ProgressTab({ store, openSettings }) {
           </div>
         </div>
         <div className="total-training-body">
-          <DonutChart minutesByCategory={minutesByCategory} size={80} />
+          <DonutChart minutesByCategory={minutesByCategory} size={96} />
           <div className="total-training-text">
             <div className="total-training-value">{fmtTraining(totalTrainingMinutes)}</div>
             {completedInPeriod > 0 && (
               <div className="total-training-sub">over {completedInPeriod} session{completedInPeriod === 1 ? '' : 's'}</div>
             )}
-            <div className="total-training-week">↑ Wk {pos.weekNumber} of {TOTAL_WEEKS}</div>
           </div>
         </div>
       </div>
 
-      <div className="section-head">
-        <h3>Weekly load</h3>
-        <span className="section-sub section-sub-upper">hours · stacked by skill</span>
-      </div>
-      <div className="card">
+      <div className="card" style={{ marginTop: 14 }}>
+        <div className="total-training-header">
+          <span className="total-training-label">Weekly load</span>
+          <span className="total-training-label">Hours · stacked by skill</span>
+        </div>
         <StackedBarChart minutesByWeek={minutesByWeek} currentWeek={pos.weekNumber} />
         <StackedBarLegend />
       </div>
 
-      <div className="section-head">
-        <h3>17-week plan</h3>
-        <span className="section-sub section-sub-upper">Wk {pos.weekNumber} · {meta.phase.name}</span>
-      </div>
-      <div className="card">
+      <div className="card" style={{ marginTop: 14 }}>
+        <div className="total-training-header">
+          <span className="total-training-label">17-week plan</span>
+          <span className="total-training-label">Wk {pos.weekNumber} · {meta.phase.name}</span>
+        </div>
         <div className="heatmap">
           <div></div>
           {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (

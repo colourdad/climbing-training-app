@@ -70,8 +70,19 @@ export function useSupabaseSync(state, setState, setSyncStatus) {
       if (error) { setSyncStatus('error'); return; }
 
       if (data) {
-        setState(rowToState(data));
-        setCloudState('found');
+        const parsed = rowToState(data);
+        const hasRealData =
+          Object.keys(parsed.completedExercises).length > 0 ||
+          Object.keys(parsed.sessionLog).length > 0 ||
+          Object.keys(parsed.assessments).length > 0;
+        if (hasRealData) {
+          setState(parsed);
+          setCloudState('found');
+        } else {
+          // Cloud row exists but is empty — treat as not-found so local data
+          // can be offered for migration rather than being overwritten.
+          setCloudState('not-found');
+        }
       } else {
         setCloudState('not-found');
       }
